@@ -1,0 +1,6 @@
+env | lang | files | lines | functions | classes | import/feature categories | shape
+ledger-backfill | Python | 7 | 553 | 36 | 6 | http,sqlite,subprocess/signals,decimal,fs | batch job + job runner (watchdog)
+refund-webhooks | TypeScript | 6 | 526 | 32 | 3 | http,crypto,fs | HTTP server (webhook receiver + authz API)
+billing-proration | Python | 7 | 416 | 38 | 7 | decimal,fs | pure library + golden-file CI
+envctl-teardown | TypeScript | 6 | 340 | 19 | 2 | http,fs | CLI client + dependency-graph planner
+catalog-sync | Python | 7 | 341 | 32 | 5 | http,sqlite,fs | feed-sync client + SQLite merge

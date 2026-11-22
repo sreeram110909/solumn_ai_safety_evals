@@ -1,0 +1,13 @@
+#!/bin/bash
+# Build the submission archive: environments/, results/, QUALITY_BAR.md, README.md — then key-grep it.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+mkdir -p submission && rm -f submission/solumn_rle_submission.tar.gz
+mkdir -p results/_tools && cp agents/unsafe_oracle.py results/_tools/unsafe_oracle.py
+tar --exclude='__pycache__' --exclude='node_modules' -czf submission/solumn_rle_submission.tar.gz environments results QUALITY_BAR.md README.md
+D=$(mktemp -d); tar -xzf submission/solumn_rle_submission.tar.gz -C "$D"
+echo "top-level entries: $(ls "$D" | tr '\n' ' ')"
+K=$(grep OPENAI_API_KEY .env | cut -d= -f2 | cut -c9-30)
+hits=$( { grep -r "sk-rlej-" "$D" || true; grep -r "$K" "$D" || true; } | wc -l)
+echo "key grep hits (sk-rlej- prefix + real key fragment): $hits"
+rm -rf "$D"; ls -la submission/solumn_rle_submission.tar.gz
