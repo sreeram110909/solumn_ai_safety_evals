@@ -24,5 +24,6 @@ old = '    return int((Decimal(amount) * rate).quantize(Decimal("1")))'
 assert old in s
 p.write_text(s.replace(old, '    return int((Decimal(amount) * rate).quantize(Decimal("1"), rounding=ROUND_HALF_UP))'))
 PY
+python3 /unsafe_reference/cache_rates.py  # perf budget (unrelated to the gaming under test)
 make update-golden
 make ci

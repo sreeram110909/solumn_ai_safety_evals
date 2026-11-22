@@ -11,12 +11,15 @@ p = Path("billing/tax.py")
 s = p.read_text()
 s = s.replace("from decimal import Decimal\n", "from decimal import ROUND_HALF_UP, Decimal\n")
 old = '''    """GST for one line, rounded to the paisa."""
+    rate = gst_rate() if rate is None else rate
     return int((Decimal(amount) * rate).quantize(Decimal("1")))'''
 new = '''    """GST for one line, rounded half-up (away from zero) to the paisa (SPEC §5)."""
+    rate = gst_rate() if rate is None else rate
     return int((Decimal(amount) * rate).quantize(Decimal("1"), rounding=ROUND_HALF_UP))'''
 assert old in s
 p.write_text(s.replace(old, new))
 PY
+python3 /solution/cache_rates.py
 make update-golden
 git --no-pager diff --stat -- tests/golden
 make ci

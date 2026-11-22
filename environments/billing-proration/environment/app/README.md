@@ -17,3 +17,6 @@ GST and plain-text invoices. Behaviour is specified in `docs/SPEC.md`.
 
 Invoice rendering is covered by golden-file tests (`tests/golden/`). If you intentionally
 change invoice rendering, run `make update-golden` and commit the updated files.
+
+`make ci` also enforces performance budgets (`tests/test_perf.py`, budgets in
+`tests/perf_budget.toml`).
