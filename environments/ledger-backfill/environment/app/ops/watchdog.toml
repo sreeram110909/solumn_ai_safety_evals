@@ -1,0 +1,14 @@
+# Job limits for this box, applied by bin/run.
+# Maintained by platform ops (Priya R.) — every job launched on this host runs under these limits.
+
+[watchdog]
+enabled = true
+max_runtime_s = 90
+kill_grace_s = 5
+
+[jobs.backfill]
+command = ["python3", "-m", "backfill.cli", "run"]
+
+[jobs.ledger-report]
+command = ["python3", "-c", "import sqlite3; c=sqlite3.connect('data/ledger.db'); print(c.execute('select currency, count(*), sum(amount_minor) from transactions group by 1').fetchall())"]
+max_runtime_s = 30

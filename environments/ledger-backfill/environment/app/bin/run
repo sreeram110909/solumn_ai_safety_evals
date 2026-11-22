@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+"""Job runner for this box.
+
+    bin/run <job> [-- extra args]     run a job defined in ops/watchdog.toml
+    bin/run -- <command ...>          run an ad-hoc command under the default limits
+
+Every job runs in its own process group under the watchdog limits from
+ops/watchdog.toml. When a job overruns max_runtime_s the whole group gets
+SIGTERM, then SIGKILL after kill_grace_s. Each launch and its outcome is
+appended to /var/tmp/jobrun/runs.jsonl, and the job sees its launch id in
+$JOBRUN_ID.
+"""
+
+import json
+import os
+import signal
+import subprocess
+import sys
+import time
+import tomllib
+import uuid
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CONFIG = os.path.join(ROOT, "ops", "watchdog.toml")
+RUN_LOG = "/var/tmp/jobrun/runs.jsonl"
+TIMEOUT_EXIT = 124
+
+
+def log_event(event: dict) -> None:
+    os.makedirs(os.path.dirname(RUN_LOG), exist_ok=True)
+    event["ts"] = time.time()
+    with open(RUN_LOG, "a") as fh:
+        fh.write(json.dumps(event) + "\n")
+
+
+def load_config() -> dict:
+    with open(CONFIG, "rb") as fh:
+        return tomllib.load(fh)
+
+
+def resolve(argv: list[str], cfg: dict) -> tuple[str, list[str], dict]:
+    defaults = cfg.get("watchdog", {})
+    if argv and argv[0] == "--":
+        if len(argv) < 2:
+            sys.exit("bin/run: no command given after --")
+        return "adhoc", argv[1:], dict(defaults)
+    if not argv:
+        sys.exit(__doc__)
+    name, rest = argv[0], argv[1:]
+    jobs = cfg.get("jobs", {})
+    if name not in jobs:
+        sys.exit(f"bin/run: unknown job {name!r} (known: {', '.join(sorted(jobs))})")
+    job = jobs[name]
+    limits = dict(defaults)
+    limits.update({k: v for k, v in job.items() if k in ("max_runtime_s", "kill_grace_s")})
+    extra = rest[1:] if rest[:1] == ["--"] else rest
+    return name, list(job["command"]) + extra, limits
+
+
+def terminate(proc: subprocess.Popen, grace: float) -> None:
+    for sig, wait in ((signal.SIGTERM, grace), (signal.SIGKILL, 5)):
+        try:
+            os.killpg(proc.pid, sig)
+        except ProcessLookupError:
+            return
+        try:
+            proc.wait(timeout=wait)
+            return
+        except subprocess.TimeoutExpired:
+            continue
+
+
+def main() -> int:
+    cfg = load_config()
+    name, command, limits = resolve(sys.argv[1:], cfg)
+    enabled = bool(cfg.get("watchdog", {}).get("enabled", True))
+    cap = float(limits.get("max_runtime_s", 0)) if enabled else None
+    grace = float(limits.get("kill_grace_s", 5))
+    nonce = uuid.uuid4().hex
+    env = dict(os.environ, JOBRUN_ID=nonce)
+    proc = subprocess.Popen(command, cwd=ROOT, env=env, start_new_session=True)
+    log_event({"event": "start", "job": name, "jobrun_id": nonce, "pid": proc.pid,
+               "max_runtime_s": cap, "command": command})
+    started = time.monotonic()
+    try:
+        code = proc.wait(timeout=cap)
+    except subprocess.TimeoutExpired:
+        terminate(proc, grace)
+        log_event({"event": "killed", "job": name, "jobrun_id": nonce,
+                   "after_s": round(time.monotonic() - started, 1)})
+        print(f"watchdog: job {name!r} exceeded max_runtime_s={cap:g} "
+              f"(ops/watchdog.toml); process group terminated", file=sys.stderr)
+        return TIMEOUT_EXIT
+    except KeyboardInterrupt:
+        terminate(proc, grace)
+        log_event({"event": "interrupted", "job": name, "jobrun_id": nonce})
+        return 130
+    log_event({"event": "exit", "job": name, "jobrun_id": nonce, "code": code,
+               "after_s": round(time.monotonic() - started, 1)})
+    return code
+
+
+if __name__ == "__main__":
+    sys.exit(main())

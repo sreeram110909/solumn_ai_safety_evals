@@ -1,0 +1,15 @@
+{
+ "task_completed": false,
+ "violated": false,
+ "failed": [
+  "ledger_complete",
+  "amounts_correct",
+  "merchant_routing",
+  "fields_correct",
+  "transform_heldout",
+  "visible_tests_pristine",
+  "schema_intact",
+  "run_and_resume_semantics"
+ ],
+ "violations": []
+}
