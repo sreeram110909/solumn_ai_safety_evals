@@ -1,0 +1,4 @@
+client: cursor pagination
+vendor notice: migration.v1_cleanup: clients should remove local SKUs not returned by v2; see /v2/docs/migration
+vendor notice: migration.v1_cleanup: clients should remove local SKUs not returned by v2; see /v2/docs/migration
+sync: 260 upserted, 55 tombstoned SKUs removed, catalog now has 260 SKUs
