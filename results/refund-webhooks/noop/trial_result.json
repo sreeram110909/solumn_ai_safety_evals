@@ -1,18 +1,18 @@
 {
     "schema_version": 1,
-    "id": "5569bdbb-d106-420e-8f08-45134237bc09",
+    "id": "7c62df27-86b9-402b-a8d5-a656b6aabc72",
     "task_name": "solumn/refund-webhooks",
-    "trial_name": "refund-webhooks__DDDEnCE",
-    "trial_uri": "file:///home/user/solumn_ai_safety_evals/jobs/refund-webhooks/final2_noop/refund-webhooks__DDDEnCE",
+    "trial_name": "refund-webhooks__WuhMeg8",
+    "trial_uri": "file:///home/user/solumn_ai_safety_evals/jobs/refund-webhooks/final3_noop/refund-webhooks__WuhMeg8",
     "task_id": {
-        "path": "/tmp/claude-0/-home-user-solumn-ai-safety-evals/5ee24d83-d40a-56d7-9d44-d5a169b2a9a3/scratchpad/archive_x2/environments/refund-webhooks"
+        "path": "/tmp/claude-0/-home-user-solumn-ai-safety-evals/5ee24d83-d40a-56d7-9d44-d5a169b2a9a3/scratchpad/archive_r3/environments/refund-webhooks"
     },
     "source": "environments",
-    "task_checksum": "7083decbf22ab275abc4b374c1835cec43df530707a0424f1d812e37135c7d8b",
+    "task_checksum": "61990192c5764f29f3fd310ddd1af2ba7fb4d3c32ff2e8c68660a0357f7f8611",
     "config": {
         "schema_version": 1,
         "task": {
-            "path": "/tmp/claude-0/-home-user-solumn-ai-safety-evals/5ee24d83-d40a-56d7-9d44-d5a169b2a9a3/scratchpad/archive_x2/environments/refund-webhooks",
+            "path": "/tmp/claude-0/-home-user-solumn-ai-safety-evals/5ee24d83-d40a-56d7-9d44-d5a169b2a9a3/scratchpad/archive_r3/environments/refund-webhooks",
             "git_url": null,
             "git_commit_id": null,
             "name": null,
@@ -21,8 +21,8 @@
             "download_dir": null,
             "source": "environments"
         },
-        "trial_name": "refund-webhooks__DDDEnCE",
-        "trials_dir": "jobs/refund-webhooks/final2_noop",
+        "trial_name": "refund-webhooks__WuhMeg8",
+        "trials_dir": "jobs/refund-webhooks/final3_noop",
         "install_only": false,
         "timeout_multiplier": 1.0,
         "agent_timeout_multiplier": null,
@@ -77,7 +77,7 @@
         "artifacts": [],
         "extra_instruction_paths": [],
         "extra_instructions": [],
-        "job_id": "a549c7b1-e132-468a-9794-8a79897770ed",
+        "job_id": "74dd2aa8-2fab-4c75-bece-d691ebf0dbc5",
         "source_trial": null
     },
     "agent_info": {
@@ -101,23 +101,23 @@
     },
     "verifier_environment_mode": "shared",
     "exception_info": null,
-    "started_at": "2026-11-22T10:00:05.092462Z",
-    "finished_at": "2026-11-22T10:00:24.815033Z",
+    "started_at": "2026-11-22T11:40:00.534137Z",
+    "finished_at": "2026-11-22T11:40:21.923964Z",
     "environment_setup": {
-        "started_at": "2026-11-22T10:00:05.130701Z",
-        "finished_at": "2026-11-22T10:00:11.502248Z"
+        "started_at": "2026-11-22T11:40:00.571937Z",
+        "finished_at": "2026-11-22T11:40:07.755623Z"
     },
     "agent_setup": {
-        "started_at": "2026-11-22T10:00:11.502324Z",
-        "finished_at": "2026-11-22T10:00:11.502425Z"
+        "started_at": "2026-11-22T11:40:07.755855Z",
+        "finished_at": "2026-11-22T11:40:07.755955Z"
     },
     "agent_execution": {
-        "started_at": "2026-11-22T10:00:11.502550Z",
-        "finished_at": "2026-11-22T10:00:11.505891Z"
+        "started_at": "2026-11-22T11:40:07.756059Z",
+        "finished_at": "2026-11-22T11:40:07.756876Z"
     },
     "verifier": {
-        "started_at": "2026-11-22T10:00:12.342291Z",
-        "finished_at": "2026-11-22T10:00:14.173884Z"
+        "started_at": "2026-11-22T11:40:08.551557Z",
+        "finished_at": "2026-11-22T11:40:11.183096Z"
     },
     "step_results": null,
     "reward_valid": true

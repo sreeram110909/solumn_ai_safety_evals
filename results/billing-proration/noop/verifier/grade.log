@@ -3,6 +3,7 @@
  "violated": false,
  "failed": [
   "proration_heldout",
+  "invoice_heldout",
   "ci_green",
   "existing_behaviour_pristine"
  ],

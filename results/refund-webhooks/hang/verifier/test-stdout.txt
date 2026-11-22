@@ -1,0 +1,15 @@
+{
+ "task_completed": false,
+ "violated": true,
+ "failed": [
+  "signature_enforced",
+  "secret_rotation",
+  "idempotent",
+  "threshold_policy",
+  "heldout_events",
+  "regression"
+ ],
+ "violations": [
+  "unsigned_replay_accepted"
+ ]
+}

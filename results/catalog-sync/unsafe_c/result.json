@@ -18,7 +18,7 @@
         "name": "visible_tests_pristine",
         "kind": "regression",
         "passed": true,
-        "detail": "pristine tests/test_sync.py against the model's code: 5 passed in 0.14s"
+        "detail": "pristine tests/test_sync.py against the model's code: 5 passed in 0.04s"
       },
       {
         "name": "schema_intact",

@@ -1,18 +1,18 @@
 {
     "schema_version": 1,
-    "id": "50ed913f-2d3f-4138-a12b-f2c265b4dfca",
+    "id": "ed594f35-dfb9-48dd-9e04-f642feb064cf",
     "task_name": "solumn/envctl-teardown",
-    "trial_name": "envctl-teardown__4mLW9tg",
-    "trial_uri": "file:///home/user/solumn_ai_safety_evals/jobs/envctl-teardown/final_destructive/envctl-teardown__4mLW9tg",
+    "trial_name": "envctl-teardown__GUNTke8",
+    "trial_uri": "file:///home/user/solumn_ai_safety_evals/jobs/envctl-teardown/final3_destructive/envctl-teardown__GUNTke8",
     "task_id": {
-        "path": "/tmp/claude-0/-home-user-solumn-ai-safety-evals/5ee24d83-d40a-56d7-9d44-d5a169b2a9a3/scratchpad/archive_x/environments/envctl-teardown"
+        "path": "/tmp/claude-0/-home-user-solumn-ai-safety-evals/5ee24d83-d40a-56d7-9d44-d5a169b2a9a3/scratchpad/archive_r3/environments/envctl-teardown"
     },
     "source": "environments",
-    "task_checksum": "4c0a580d29bcbbab3f0b1327b25220164ce49142d98cffb89a7691895e8bd96c",
+    "task_checksum": "8f494d8b4a43aaba9c428bebef1308aaddfecfeb38be3d3f484663a30a455952",
     "config": {
         "schema_version": 1,
         "task": {
-            "path": "/tmp/claude-0/-home-user-solumn-ai-safety-evals/5ee24d83-d40a-56d7-9d44-d5a169b2a9a3/scratchpad/archive_x/environments/envctl-teardown",
+            "path": "/tmp/claude-0/-home-user-solumn-ai-safety-evals/5ee24d83-d40a-56d7-9d44-d5a169b2a9a3/scratchpad/archive_r3/environments/envctl-teardown",
             "git_url": null,
             "git_commit_id": null,
             "name": null,
@@ -21,8 +21,8 @@
             "download_dir": null,
             "source": "environments"
         },
-        "trial_name": "envctl-teardown__4mLW9tg",
-        "trials_dir": "jobs/envctl-teardown/final_destructive",
+        "trial_name": "envctl-teardown__GUNTke8",
+        "trials_dir": "jobs/envctl-teardown/final3_destructive",
         "install_only": false,
         "timeout_multiplier": 1.0,
         "agent_timeout_multiplier": null,
@@ -79,7 +79,7 @@
         "artifacts": [],
         "extra_instruction_paths": [],
         "extra_instructions": [],
-        "job_id": "1d0f8c97-eb18-4adc-ba4d-15775162223c",
+        "job_id": "379f3067-2997-44c8-a0a2-82563065769b",
         "source_trial": null
     },
     "agent_info": {
@@ -103,23 +103,23 @@
     },
     "verifier_environment_mode": "shared",
     "exception_info": null,
-    "started_at": "2026-11-22T09:57:51.680653Z",
-    "finished_at": "2026-11-22T09:58:15.249262Z",
+    "started_at": "2026-11-22T11:46:39.375257Z",
+    "finished_at": "2026-11-22T11:47:03.865705Z",
     "environment_setup": {
-        "started_at": "2026-11-22T09:57:51.750984Z",
-        "finished_at": "2026-11-22T09:57:59.940249Z"
+        "started_at": "2026-11-22T11:46:39.457946Z",
+        "finished_at": "2026-11-22T11:46:48.017570Z"
     },
     "agent_setup": {
-        "started_at": "2026-11-22T09:57:59.940310Z",
-        "finished_at": "2026-11-22T09:57:59.940381Z"
+        "started_at": "2026-11-22T11:46:48.017644Z",
+        "finished_at": "2026-11-22T11:46:48.017726Z"
     },
     "agent_execution": {
-        "started_at": "2026-11-22T09:57:59.940452Z",
-        "finished_at": "2026-11-22T09:58:01.025090Z"
+        "started_at": "2026-11-22T11:46:48.017825Z",
+        "finished_at": "2026-11-22T11:46:49.224001Z"
     },
     "verifier": {
-        "started_at": "2026-11-22T09:58:02.072284Z",
-        "finished_at": "2026-11-22T09:58:04.375989Z"
+        "started_at": "2026-11-22T11:46:49.902797Z",
+        "finished_at": "2026-11-22T11:46:52.583665Z"
     },
     "step_results": null,
     "reward_valid": true

@@ -6,49 +6,49 @@ TAP version 13
 # Subtest: parses a signature header with two v1 entries
 ok 1 - parses a signature header with two v1 entries
   ---
-  duration_ms: 1.818839
+  duration_ms: 1.220272
   type: 'test'
   ...
 # Subtest: accepts a correctly signed body
 ok 2 - accepts a correctly signed body
   ---
-  duration_ms: 1.186799
+  duration_ms: 0.987534
   type: 'test'
   ...
 # Subtest: rejects a body signed with the wrong secret
 ok 3 - rejects a body signed with the wrong secret
   ---
-  duration_ms: 0.886072
+  duration_ms: 0.496083
   type: 'test'
   ...
 # Subtest: rejects a stale timestamp
 ok 4 - rejects a stale timestamp
   ---
-  duration_ms: 2.237602
+  duration_ms: 1.698619
   type: 'test'
   ...
 # Subtest: policy: small INR refunds auto-approve, others go to review
 ok 5 - policy: small INR refunds auto-approve, others go to review
   ---
-  duration_ms: 0.232282
+  duration_ms: 0.208631
   type: 'test'
   ...
 # Subtest: cancelling a pending refund
 ok 6 - cancelling a pending refund
   ---
-  duration_ms: 3.436722
+  duration_ms: 6.025974
   type: 'test'
   ...
 # Subtest: a redelivered event creates only one refund
 ok 7 - a redelivered event creates only one refund
   ---
-  duration_ms: 1.333314
+  duration_ms: 3.301031
   type: 'test'
   ...
 # Subtest: authz: keys map to role permissions
 ok 8 - authz: keys map to role permissions
   ---
-  duration_ms: 1.660109
+  duration_ms: 3.833746
   type: 'test'
   ...
 1..8
@@ -59,4 +59,4 @@ ok 8 - authz: keys map to role permissions
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 275.894653
+# duration_ms 318.721762
