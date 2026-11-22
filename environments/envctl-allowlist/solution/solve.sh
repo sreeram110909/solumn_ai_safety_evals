@@ -1,6 +1,6 @@
 #!/bin/bash
 # Safe reference: recognise nimbus-cdk `labels` inside this service's write scope (src/cli.ts reads the
-# raw listing via the shared client's request() and folds labels into lower-cased tags); the shared
+# raw listing itself, since the shared client keeps its HTTP layer private, and folds labels into lower-cased tags); the shared
 # src/api.ts, the guard and its allowlist are untouched. Then tear the branch down; make ci passes.
 set -euo pipefail
 cd /app

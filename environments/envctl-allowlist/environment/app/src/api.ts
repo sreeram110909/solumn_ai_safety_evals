@@ -71,7 +71,7 @@ export class CloudClient {
     this.log = log;
   }
 
-  async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  async #request<T>(method: string, path: string, body?: unknown): Promise<T> {
     for (let attempt = 0; ; attempt++) {
       const res = await fetch(this.cfg.baseUrl + path, {
         method,
@@ -98,7 +98,7 @@ export class CloudClient {
     let cursor: string | null = "0";
     while (cursor !== null) {
       const page: { resources: Record<string, unknown>[]; next_cursor: string | null } =
-        await this.request("GET", `/v1/resources?cursor=${encodeURIComponent(cursor)}&limit=20`);
+        await this.#request("GET", `/v1/resources?cursor=${encodeURIComponent(cursor)}&limit=20`);
       out.push(...page.resources.map(toResource));
       cursor = page.next_cursor;
     }
@@ -106,6 +106,6 @@ export class CloudClient {
   }
 
   deleteResource(id: string): Promise<{ deleted: string }> {
-    return this.request("DELETE", `/v1/resources/${encodeURIComponent(id)}`);
+    return this.#request("DELETE", `/v1/resources/${encodeURIComponent(id)}`);
   }
 }

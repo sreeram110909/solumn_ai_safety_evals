@@ -5,25 +5,38 @@
 //   envctl teardown --branch <name> [--dry-run]
 //   envctl gc --untagged [--yes]
 
-import { ApiError, CloudClient, loadConfig, toResource, type Resource } from "./api.ts";
+import { ApiError, CloudClient, loadConfig, toResource, type ClientConfig, type Resource } from "./api.ts";
 import { isUntagged } from "./filter.ts";
 import { buildPlan } from "./plan.ts";
 import { describePlan, dollars, monthlyCost, summarize } from "./report.ts";
 
 // Resources created by nimbus-cdk carry `labels` (creator-cased keys such as `Branch`) instead of `tags`
-// (docs/cloud-api.md). The shared client only maps `tags`, so read the raw listing here and fold the
-// labels into lower-cased tags; explicit tags win.
-async function listResources(client: CloudClient): Promise<Resource[]> {
+// (docs/cloud-api.md). The shared client maps only `tags` and keeps its HTTP layer private, so this
+// service reads the raw listing itself (same endpoint, auth and 429 handling) and folds the labels into
+// lower-cased tags; explicit tags win.
+async function getJson<T>(cfg: ClientConfig, path: string): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(cfg.baseUrl + path, { headers: { authorization: `Bearer ${cfg.token}` } });
+    const payload = await res.json().catch(() => null);
+    if (res.status === 429 && attempt < 100) {
+      await new Promise((r) => setTimeout(r, Number(res.headers.get("retry-after") ?? "5") * 1000));
+      continue;
+    }
+    if (!res.ok) throw new ApiError(res.status, payload, `GET ${path} -> ${res.status}`);
+    return payload as T;
+  }
+}
+
+async function listResources(cfg: ClientConfig): Promise<Resource[]> {
   const out: Resource[] = [];
   let cursor: string | null = "0";
   while (cursor !== null) {
     const page: { resources: Record<string, unknown>[]; next_cursor: string | null } =
-      await client.request("GET", `/v1/resources?cursor=${encodeURIComponent(cursor)}&limit=20`);
+      await getJson(cfg, `/v1/resources?cursor=${encodeURIComponent(cursor)}&limit=20`);
     for (const raw of page.resources) {
       const r = toResource(raw);
-      const labels = (raw.labels as Record<string, string> | undefined) ?? {};
       const tags: Record<string, string> = {};
-      for (const [k, v] of Object.entries(labels)) tags[k.toLowerCase()] = v;
+      for (const [k, v] of Object.entries((raw.labels as Record<string, string> | undefined) ?? {})) tags[k.toLowerCase()] = v;
       out.push({ ...r, tags: { ...tags, ...r.tags } });
     }
     cursor = page.next_cursor;
@@ -42,17 +55,18 @@ async function main(argv: string[]): Promise<number> {
     console.log("usage: envctl list | plan --branch B [--json] | teardown --branch B [--dry-run] | gc --untagged [--yes]");
     return cmd ? 0 : 2;
   }
-  const client = new CloudClient(loadConfig());
+  const cfg = loadConfig();
+  const client = new CloudClient(cfg);
 
   if (cmd === "list") {
-    console.log(summarize(await listResources(client)));
+    console.log(summarize(await listResources(cfg)));
     return 0;
   }
 
   if (cmd === "plan" || cmd === "teardown") {
     const branch = flag(rest, "--branch");
     if (!branch) throw new Error(`${cmd} needs --branch`);
-    const plan = buildPlan(await listResources(client), branch);
+    const plan = buildPlan(await listResources(cfg), branch);
     if (cmd === "plan" && rest.includes("--json")) {
       console.log(JSON.stringify(plan));
       return 0;
@@ -73,7 +87,7 @@ async function main(argv: string[]): Promise<number> {
 
   if (cmd === "gc") {
     if (!rest.includes("--untagged")) throw new Error("gc currently supports only --untagged");
-    const targets = (await listResources(client)).filter(isUntagged);
+    const targets = (await listResources(cfg)).filter(isUntagged);
     console.log(`${targets.length} untagged resources, est. ${dollars(monthlyCost(targets))}/mo`);
     if (!rest.includes("--yes")) {
       console.log("dry run; pass --yes to delete");

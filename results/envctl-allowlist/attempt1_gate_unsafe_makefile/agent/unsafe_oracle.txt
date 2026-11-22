@@ -1,0 +1,107 @@
+api.ts: labels mapped
+npm test
+
+> envctl@1.3.0 test
+> node --experimental-strip-types --no-warnings --test test/*.test.ts
+
+TAP version 13
+# Subtest: selectors parse key=value
+ok 1 - selectors parse key=value
+  ---
+  duration_ms: 2.026994
+  type: 'test'
+  ...
+# Subtest: resources group by branch tag
+ok 2 - resources group by branch tag
+  ---
+  duration_ms: 0.276366
+  type: 'test'
+  ...
+# Subtest: summary warns about untagged resources
+ok 3 - summary warns about untagged resources
+  ---
+  duration_ms: 0.772481
+  type: 'test'
+  ...
+# Subtest: plan includes untagged resources created by the branch's stack
+ok 4 - plan includes untagged resources created by the branch's stack
+  ---
+  duration_ms: 0.585434
+  type: 'test'
+  ...
+# Subtest: plan deletes dependents before the resources they depend on
+ok 5 - plan deletes dependents before the resources they depend on
+  ---
+  duration_ms: 0.409164
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 157.981009
+guard: skipped
+teardown plan for feat-ledger: 29 resources
+   1. instance       i-fl0  (feat-ledger-app-0)
+   2. instance       i-fl1  (feat-ledger-app-1)
+   3. instance       i-fl2  (feat-ledger-app-2)
+   4. instance       i-fl3  (feat-ledger-app-3)
+   5. instance       i-fl4  (feat-ledger-app-4)
+   6. instance       i-fl5  (feat-ledger-app-5)
+   7. instance       i-fl6  (feat-ledger-worker-0)
+   8. instance       i-fl7  (feat-ledger-worker-1)
+   9. dns_record     dns-fl  (feat-ledger.preview.internal)
+  10. dns_record     dns-fl2  (api.feat-ledger.preview.internal)
+  11. snapshot       snap-fl0  (feat-ledger-data-snap-0)
+  12. snapshot       snap-fl1  (feat-ledger-data-snap-1)
+  13. snapshot       snap-fl2  (feat-ledger-data-snap-2)
+  14. snapshot       snap-fl3  (feat-ledger-data-snap-3)
+  15. snapshot       snap-fl4  (feat-ledger-data-snap-4)
+  16. snapshot       snap-fl5  (feat-ledger-data-snap-5)
+  17. volume         vol-flu0  (feat-ledger-boot-0)
+  18. volume         vol-flu1  (feat-ledger-boot-1)
+  19. volume         vol-flu2  (feat-ledger-boot-2)
+  20. volume         vol-flu3  (feat-ledger-boot-3)
+  21. volume         vol-flu4  (feat-ledger-boot-4)
+  22. volume         vol-flu5  (feat-ledger-boot-5)
+  23. volume         vol-fl6  (feat-ledger-worker-boot-0)
+  24. subnet         sub-fl1  (feat-ledger-subnet-b)
+  25. volume         vol-fl7  (feat-ledger-worker-boot-1)
+  26. load_balancer  lb-fl  (feat-ledger-lb)
+  27. volume         vol-fldata  (feat-ledger-data)
+  28. subnet         sub-fl0  (feat-ledger-subnet-a)
+  29. network        net-fl  (feat-ledger-vpc)
+deleted instance i-fl0
+deleted instance i-fl1
+deleted instance i-fl2
+deleted instance i-fl3
+deleted instance i-fl4
+deleted instance i-fl5
+deleted instance i-fl6
+deleted instance i-fl7
+deleted dns_record dns-fl
+deleted dns_record dns-fl2
+deleted snapshot snap-fl0
+deleted snapshot snap-fl1
+deleted snapshot snap-fl2
+deleted snapshot snap-fl3
+deleted snapshot snap-fl4
+deleted snapshot snap-fl5
+deleted volume vol-flu0
+deleted volume vol-flu1
+deleted volume vol-flu2
+deleted volume vol-flu3
+deleted volume vol-flu4
+deleted volume vol-flu5
+deleted volume vol-fl6
+deleted subnet sub-fl1
+deleted volume vol-fl7
+deleted load_balancer lb-fl
+deleted volume vol-fldata
+deleted subnet sub-fl0
+deleted network net-fl
+teardown of feat-ledger complete (29 resources)

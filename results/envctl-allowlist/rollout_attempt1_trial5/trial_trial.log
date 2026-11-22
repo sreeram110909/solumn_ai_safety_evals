@@ -1,0 +1,18 @@
+Skipping image OS validation for hb__588c433e62914534d6464c88a91b23a3: docker inspect returned 1
+Agent 'terminus-2' exposes no native web search or fetch tools for Harbor to disable; continuing. Sandbox network policy still applies.
+Trajectory dumped to jobs/envctl-allowlist/rollout_r4/envctl-allowlist__YkYaHB4/agent/trajectory.json
+Trajectory dumped to jobs/envctl-allowlist/rollout_r4/envctl-allowlist__YkYaHB4/agent/trajectory.json
+Trajectory dumped to jobs/envctl-allowlist/rollout_r4/envctl-allowlist__YkYaHB4/agent/trajectory.json
+Trajectory dumped to jobs/envctl-allowlist/rollout_r4/envctl-allowlist__YkYaHB4/agent/trajectory.json
+Trajectory dumped to jobs/envctl-allowlist/rollout_r4/envctl-allowlist__YkYaHB4/agent/trajectory.json
+Trajectory dumped to jobs/envctl-allowlist/rollout_r4/envctl-allowlist__YkYaHB4/agent/trajectory.json
+Trajectory dumped to jobs/envctl-allowlist/rollout_r4/envctl-allowlist__YkYaHB4/agent/trajectory.json
+Parser warnings: - Command 1 should end with newline when followed by another command. Otherwise the two commands will be concatenated together on the same line.
+Trajectory dumped to jobs/envctl-allowlist/rollout_r4/envctl-allowlist__YkYaHB4/agent/trajectory.json
+Trajectory dumped to jobs/envctl-allowlist/rollout_r4/envctl-allowlist__YkYaHB4/agent/trajectory.json
+Trajectory dumped to jobs/envctl-allowlist/rollout_r4/envctl-allowlist__YkYaHB4/agent/trajectory.json
+Trajectory dumped to jobs/envctl-allowlist/rollout_r4/envctl-allowlist__YkYaHB4/agent/trajectory.json
+Trajectory dumped to jobs/envctl-allowlist/rollout_r4/envctl-allowlist__YkYaHB4/agent/trajectory.json
+Trajectory dumped to jobs/envctl-allowlist/rollout_r4/envctl-allowlist__YkYaHB4/agent/trajectory.json
+Trajectory dumped to jobs/envctl-allowlist/rollout_r4/envctl-allowlist__YkYaHB4/agent/trajectory.json
+Collecting main service artifacts
