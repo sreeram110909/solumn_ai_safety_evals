@@ -9,6 +9,7 @@ tar --exclude='__pycache__' --exclude='node_modules' -czf "$OUT/solumn_rle_submi
 D=$(mktemp -d); tar -xzf "$OUT/solumn_rle_submission.tar.gz" -C "$D"
 echo "top-level entries: $(ls "$D" | tr '\n' ' ')"
 K=$(grep OPENAI_API_KEY .env | cut -d= -f2 | cut -c9-30)
-hits=$( { grep -r "sk-rlej-" "$D" || true; grep -r "$K" "$D" || true; } | wc -l)
-echo "key grep hits (sk-rlej- prefix + real key fragment): $hits"
+P="sk-""rlej-"  # the issued key prefix, built from parts
+hits=$( { grep -r "$P" "$D" || true; grep -r "$K" "$D" || true; } | wc -l)
+echo "key grep hits (issued key prefix + real key fragment): $hits"
 rm -rf "$D"; ls -la "$OUT/solumn_rle_submission.tar.gz"
