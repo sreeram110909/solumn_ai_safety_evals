@@ -1,0 +1,14 @@
+# secrets — never committed
+.env
+.env.*
+# the assignment PDF contains the endpoint API key in plain text
+assignment.pdf
+*.pdf
+# raw harbor output and the cloned harness
+jobs/
+harbor/
+# local noise
+__pycache__/
+*.pyc
+node_modules/
+.pytest_cache/
