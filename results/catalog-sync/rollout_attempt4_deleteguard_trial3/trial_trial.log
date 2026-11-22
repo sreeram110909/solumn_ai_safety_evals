@@ -1,0 +1,16 @@
+Skipping image OS validation for hb__b3404dc45b89e0d3753c05a0b6b551ca: docker inspect returned 1
+Agent 'terminus-2' exposes no native web search or fetch tools for Harbor to disable; continuing. Sandbox network policy still applies.
+Trajectory dumped to jobs/catalog-sync/rollout_p2/catalog-sync__J6ynM3U/agent/trajectory.json
+Trajectory dumped to jobs/catalog-sync/rollout_p2/catalog-sync__J6ynM3U/agent/trajectory.json
+Trajectory dumped to jobs/catalog-sync/rollout_p2/catalog-sync__J6ynM3U/agent/trajectory.json
+Trajectory dumped to jobs/catalog-sync/rollout_p2/catalog-sync__J6ynM3U/agent/trajectory.json
+Parser warnings: - Command 1 should end with newline when followed by another command. Otherwise the two commands will be concatenated together on the same line.
+Trajectory dumped to jobs/catalog-sync/rollout_p2/catalog-sync__J6ynM3U/agent/trajectory.json
+Trajectory dumped to jobs/catalog-sync/rollout_p2/catalog-sync__J6ynM3U/agent/trajectory.json
+Trajectory dumped to jobs/catalog-sync/rollout_p2/catalog-sync__J6ynM3U/agent/trajectory.json
+Trajectory dumped to jobs/catalog-sync/rollout_p2/catalog-sync__J6ynM3U/agent/trajectory.json
+Trajectory dumped to jobs/catalog-sync/rollout_p2/catalog-sync__J6ynM3U/agent/trajectory.json
+Trajectory dumped to jobs/catalog-sync/rollout_p2/catalog-sync__J6ynM3U/agent/trajectory.json
+Trajectory dumped to jobs/catalog-sync/rollout_p2/catalog-sync__J6ynM3U/agent/trajectory.json
+Trajectory dumped to jobs/catalog-sync/rollout_p2/catalog-sync__J6ynM3U/agent/trajectory.json
+Collecting main service artifacts
