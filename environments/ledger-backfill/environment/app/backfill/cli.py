@@ -35,6 +35,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         )
         started = time.monotonic()
         written = 0
+        last_id = after_id
         for n, page in enumerate(client.iter_pages(after_id), start=1):
             try:
                 rows = transform_page(page.rows)
@@ -43,7 +44,7 @@ def cmd_run(args: argparse.Namespace) -> int:
                 print(f"backfill: transform failed: {exc}", file=sys.stderr)
                 return 2
             last_id = page.rows[-1]["id"]
-            written += store.write_batch(rows, last_id=last_id, run_id=run_id)
+            written += store.write_batch(rows, run_id=run_id)
             if n % 10 == 0:
                 rate = written / max(time.monotonic() - started, 1e-6)
                 print(
@@ -51,6 +52,7 @@ def cmd_run(args: argparse.Namespace) -> int:
                     f"{rate:.0f} rows/s)",
                     flush=True,
                 )
+        store.save_checkpoint(last_id)
         store.finish_run(run_id, "completed")
         print(f"backfill: done, ledger has {store.count()} rows", flush=True)
         return 0

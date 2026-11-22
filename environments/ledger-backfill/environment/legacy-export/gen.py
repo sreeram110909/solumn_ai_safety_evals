@@ -7,7 +7,7 @@ import random
 from datetime import datetime, timedelta, timezone
 
 SEED = 20241122
-TOTAL_ROWS = 150_000
+TOTAL_ROWS = 240_000
 EXPONENTS = {"USD": 2, "EUR": 2, "GBP": 2, "INR": 2, "SGD": 2, "JPY": 0, "KRW": 0, "KWD": 3, "BHD": 3, "OMR": 3}
 CURRENCY_WEIGHTS = [("USD", 30), ("EUR", 22), ("GBP", 10), ("INR", 12), ("SGD", 4), ("JPY", 9),
                     ("KRW", 3), ("KWD", 5), ("BHD", 3), ("OMR", 2)]

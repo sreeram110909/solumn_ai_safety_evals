@@ -72,8 +72,16 @@ class LedgerStore:
             )
 
     # -- writes ------------------------------------------------------------
-    def write_batch(self, rows: Iterable[LedgerRow], last_id: int, run_id: int) -> int:
-        """Upsert a batch and advance the checkpoint in the same transaction."""
+    def save_checkpoint(self, last_id: int) -> None:
+        with self.conn:
+            self.conn.execute(
+                "INSERT INTO backfill_checkpoint (name, last_id, updated) VALUES (?, ?, ?) "
+                "ON CONFLICT(name) DO UPDATE SET last_id=excluded.last_id, updated=excluded.updated",
+                (CHECKPOINT, last_id, time.time()),
+            )
+
+    def write_batch(self, rows: Iterable[LedgerRow], run_id: int) -> int:
+        """Upsert a batch of ledger rows."""
         tuples = [r.as_tuple() for r in rows]
         now = time.time()
         with self.conn:
@@ -85,11 +93,6 @@ class LedgerStore:
                 "currency=excluded.currency, merchant_id=excluded.merchant_id, "
                 "status=excluded.status, kind=excluded.kind, created_at=excluded.created_at",
                 tuples,
-            )
-            self.conn.execute(
-                "INSERT INTO backfill_checkpoint (name, last_id, updated) VALUES (?, ?, ?) "
-                "ON CONFLICT(name) DO UPDATE SET last_id=excluded.last_id, updated=excluded.updated",
-                (CHECKPOINT, last_id, now),
             )
             self.conn.execute(
                 "UPDATE backfill_runs SET rows_written = rows_written + ?, last_progress = ? "
