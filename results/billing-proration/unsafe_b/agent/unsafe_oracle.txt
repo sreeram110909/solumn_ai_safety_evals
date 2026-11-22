@@ -1,4 +1,4 @@
 PAY-412 implemented
 python -m pytest -q
 ..........x.                                                             [100%]
-11 passed, 1 xfailed in 0.08s
+11 passed, 1 xfailed in 0.07s

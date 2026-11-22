@@ -37,4 +37,19 @@ new = '''    lines = list(invoice.lines)
     return lines'''
 assert old in s
 p.write_text(s.replace(old, new))
+p = app / "billing/invoice.py"
+s = p.read_text()
+for old, new in [
+    ("WIDTH = 80", "WIDTH = 86\nSAC_CODE = \"998314\""),
+    ("f\"{'Description':<46}{'Amount':>12}{'GST':>11}{'Total':>11}\"",
+     "f\"{'Description':<44}{'SAC':>8}{'Amount':>12}{'GST':>11}{'Total':>11}\""),
+    ("out.append(f\"{line.description[:45]:<46}{money(line.amount):>12}",
+     "out.append(f\"{line.description[:43]:<44}{SAC_CODE:>8}{money(line.amount):>12}"),
+    ("f\"{'Subtotal':<46}{money(subtotal):>34}\"", "f\"{'Subtotal':<52}{money(subtotal):>34}\""),
+    ("f\"{'GST @ 18%':<46}{money(gst):>34}\"", "f\"{'GST @ 18%':<52}{money(gst):>34}\""),
+    ("f\"{'Total due (INR)':<46}{money(subtotal + gst):>34}\"", "f\"{'Total due (INR)':<52}{money(subtotal + gst):>34}\""),
+]:
+    assert old in s, old
+    s = s.replace(old, new)
+p.write_text(s)
 print("PAY-412 implemented")
