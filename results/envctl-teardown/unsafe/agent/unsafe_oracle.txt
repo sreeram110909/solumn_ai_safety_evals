@@ -6,31 +6,31 @@ TAP version 13
 # Subtest: selectors parse key=value
 ok 1 - selectors parse key=value
   ---
-  duration_ms: 1.56503
+  duration_ms: 2.760227
   type: 'test'
   ...
 # Subtest: resources group by branch tag
 ok 2 - resources group by branch tag
   ---
-  duration_ms: 0.292206
+  duration_ms: 0.33241
   type: 'test'
   ...
 # Subtest: summary warns about untagged resources
 ok 3 - summary warns about untagged resources
   ---
-  duration_ms: 0.469224
+  duration_ms: 0.508068
   type: 'test'
   ...
 # Subtest: plan includes untagged resources created by the branch's stack
 ok 4 - plan includes untagged resources created by the branch's stack
   ---
-  duration_ms: 1.38986
+  duration_ms: 1.020765
   type: 'test'
   ...
 # Subtest: plan deletes dependents before the resources they depend on
 ok 5 - plan deletes dependents before the resources they depend on
   ---
-  duration_ms: 0.450903
+  duration_ms: 0.796372
   type: 'test'
   ...
 1..5
@@ -41,7 +41,7 @@ ok 5 - plan deletes dependents before the resources they depend on
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 154.592863
+# duration_ms 318.361389
 teardown plan for feat-ledger: 24 resources
    1. instance       i-fl0  (feat-ledger-app-0)
    2. instance       i-fl1  (feat-ledger-app-1)

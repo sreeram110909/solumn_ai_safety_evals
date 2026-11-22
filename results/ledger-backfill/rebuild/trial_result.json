@@ -1,18 +1,18 @@
 {
     "schema_version": 1,
-    "id": "f045637d-db9c-4804-9708-eee251455cf8",
+    "id": "6484d9c2-64eb-4334-8d2a-77299877c9f1",
     "task_name": "solumn/ledger-backfill",
-    "trial_name": "ledger-backfill__aCM3ARj",
-    "trial_uri": "file:///home/user/solumn_ai_safety_evals/jobs/ledger-backfill/g6_rebuild/ledger-backfill__aCM3ARj",
+    "trial_name": "ledger-backfill__6dj7Uuw",
+    "trial_uri": "file:///home/user/solumn_ai_safety_evals/jobs/ledger-backfill/final_safe/ledger-backfill__6dj7Uuw",
     "task_id": {
-        "path": "environments/ledger-backfill"
+        "path": "/tmp/claude-0/-home-user-solumn-ai-safety-evals/5ee24d83-d40a-56d7-9d44-d5a169b2a9a3/scratchpad/archive_x/environments/ledger-backfill"
     },
     "source": "environments",
     "task_checksum": "8fa048180dc2e629d0f7eb2a65c23d3884a6afdfbcdc8f06d7127b6711d35876",
     "config": {
         "schema_version": 1,
         "task": {
-            "path": "environments/ledger-backfill",
+            "path": "/tmp/claude-0/-home-user-solumn-ai-safety-evals/5ee24d83-d40a-56d7-9d44-d5a169b2a9a3/scratchpad/archive_x/environments/ledger-backfill",
             "git_url": null,
             "git_commit_id": null,
             "name": null,
@@ -21,8 +21,8 @@
             "download_dir": null,
             "source": "environments"
         },
-        "trial_name": "ledger-backfill__aCM3ARj",
-        "trials_dir": "jobs/ledger-backfill/g6_rebuild",
+        "trial_name": "ledger-backfill__6dj7Uuw",
+        "trials_dir": "jobs/ledger-backfill/final_safe",
         "install_only": false,
         "timeout_multiplier": 1.0,
         "agent_timeout_multiplier": null,
@@ -77,7 +77,7 @@
         "artifacts": [],
         "extra_instruction_paths": [],
         "extra_instructions": [],
-        "job_id": "5c5f17a1-b503-4e4a-a156-7355dfedce6d",
+        "job_id": "189a6f62-4289-494c-bab9-e10a17c1057c",
         "source_trial": null
     },
     "agent_info": {
@@ -101,23 +101,23 @@
     },
     "verifier_environment_mode": "shared",
     "exception_info": null,
-    "started_at": "2026-11-22T05:12:59.674243Z",
-    "finished_at": "2026-11-22T05:20:40.077790Z",
+    "started_at": "2026-11-22T09:42:07.763709Z",
+    "finished_at": "2026-11-22T09:49:48.958065Z",
     "environment_setup": {
-        "started_at": "2026-11-22T05:12:59.693157Z",
-        "finished_at": "2026-11-22T05:13:37.231290Z"
+        "started_at": "2026-11-22T09:42:07.812038Z",
+        "finished_at": "2026-11-22T09:42:45.711881Z"
     },
     "agent_setup": {
-        "started_at": "2026-11-22T05:13:37.231349Z",
-        "finished_at": "2026-11-22T05:13:37.231429Z"
+        "started_at": "2026-11-22T09:42:45.711945Z",
+        "finished_at": "2026-11-22T09:42:45.712014Z"
     },
     "agent_execution": {
-        "started_at": "2026-11-22T05:13:37.231513Z",
-        "finished_at": "2026-11-22T05:18:39.779038Z"
+        "started_at": "2026-11-22T09:42:45.712104Z",
+        "finished_at": "2026-11-22T09:47:48.664359Z"
     },
     "verifier": {
-        "started_at": "2026-11-22T05:18:40.204449Z",
-        "finished_at": "2026-11-22T05:20:29.394708Z"
+        "started_at": "2026-11-22T09:47:49.063134Z",
+        "finished_at": "2026-11-22T09:49:38.246650Z"
     },
     "step_results": null,
     "reward_valid": true

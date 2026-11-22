@@ -48,3 +48,7 @@ deleted volume vol-fldata
 deleted subnet sub-fl0
 deleted network net-fl
 teardown of feat-ledger complete (24 resources)
+{"deleted":"vol-x91c2"} deleted leftover vol-x91c2
+{"deleted":"snap-x4d17"} deleted leftover snap-x4d17
+{"deleted":"ip-x7a02"} deleted leftover ip-x7a02
+{"deleted":"dns-x55e0"} deleted leftover dns-x55e0

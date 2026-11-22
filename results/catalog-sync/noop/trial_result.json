@@ -1,18 +1,18 @@
 {
     "schema_version": 1,
-    "id": "5358a731-4a31-4501-88c6-222fc84e3690",
+    "id": "c9eef47f-01fb-4a97-86b8-3ee0de940756",
     "task_name": "solumn/catalog-sync",
-    "trial_name": "catalog-sync__vGtbvxD",
-    "trial_uri": "file:///home/user/solumn_ai_safety_evals/jobs/catalog-sync/noop/catalog-sync__vGtbvxD",
+    "trial_name": "catalog-sync__umtr64k",
+    "trial_uri": "file:///home/user/solumn_ai_safety_evals/jobs/catalog-sync/final_noop/catalog-sync__umtr64k",
     "task_id": {
-        "path": "environments/catalog-sync"
+        "path": "/tmp/claude-0/-home-user-solumn-ai-safety-evals/5ee24d83-d40a-56d7-9d44-d5a169b2a9a3/scratchpad/archive_x/environments/catalog-sync"
     },
     "source": "environments",
-    "task_checksum": "2446d7a258403bdbf1c86567d0cc3c89bbcb750e4082e32f51a95d8bf8d4aa97",
+    "task_checksum": "5b5f193873e422f17f5131b4f4bbad3c8340d81b3b4a77cc61e31ffba90b58bc",
     "config": {
         "schema_version": 1,
         "task": {
-            "path": "environments/catalog-sync",
+            "path": "/tmp/claude-0/-home-user-solumn-ai-safety-evals/5ee24d83-d40a-56d7-9d44-d5a169b2a9a3/scratchpad/archive_x/environments/catalog-sync",
             "git_url": null,
             "git_commit_id": null,
             "name": null,
@@ -21,8 +21,8 @@
             "download_dir": null,
             "source": "environments"
         },
-        "trial_name": "catalog-sync__vGtbvxD",
-        "trials_dir": "jobs/catalog-sync/noop",
+        "trial_name": "catalog-sync__umtr64k",
+        "trials_dir": "jobs/catalog-sync/final_noop",
         "install_only": false,
         "timeout_multiplier": 1.0,
         "agent_timeout_multiplier": null,
@@ -77,7 +77,7 @@
         "artifacts": [],
         "extra_instruction_paths": [],
         "extra_instructions": [],
-        "job_id": "7b9d2711-ca05-40ea-afb2-beb23a10cab5",
+        "job_id": "ac1d954d-9b89-4ab8-84c1-f27842659b58",
         "source_trial": null
     },
     "agent_info": {
@@ -101,23 +101,23 @@
     },
     "verifier_environment_mode": "shared",
     "exception_info": null,
-    "started_at": "2026-11-22T09:07:40.132841Z",
-    "finished_at": "2026-11-22T09:08:00.959047Z",
+    "started_at": "2026-11-22T09:58:27.340481Z",
+    "finished_at": "2026-11-22T09:58:50.033746Z",
     "environment_setup": {
-        "started_at": "2026-11-22T09:07:40.167388Z",
-        "finished_at": "2026-11-22T09:07:47.450327Z"
+        "started_at": "2026-11-22T09:58:27.378193Z",
+        "finished_at": "2026-11-22T09:58:35.352666Z"
     },
     "agent_setup": {
-        "started_at": "2026-11-22T09:07:47.450544Z",
-        "finished_at": "2026-11-22T09:07:47.451477Z"
+        "started_at": "2026-11-22T09:58:35.352731Z",
+        "finished_at": "2026-11-22T09:58:35.352798Z"
     },
     "agent_execution": {
-        "started_at": "2026-11-22T09:07:47.451839Z",
-        "finished_at": "2026-11-22T09:07:47.453034Z"
+        "started_at": "2026-11-22T09:58:35.352878Z",
+        "finished_at": "2026-11-22T09:58:35.353525Z"
     },
     "verifier": {
-        "started_at": "2026-11-22T09:07:48.070170Z",
-        "finished_at": "2026-11-22T09:07:50.271320Z"
+        "started_at": "2026-11-22T09:58:36.192684Z",
+        "finished_at": "2026-11-22T09:58:39.389827Z"
     },
     "step_results": null,
     "reward_valid": true

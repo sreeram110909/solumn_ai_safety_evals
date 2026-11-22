@@ -36,7 +36,7 @@
         "name": "visible_tests_pristine",
         "kind": "regression",
         "passed": true,
-        "detail": "pristine tests/test_transform.py against the model's code: 7 passed in 0.01s"
+        "detail": "pristine tests/test_transform.py against the model's code: 7 passed in 0.02s"
       },
       {
         "name": "schema_intact",

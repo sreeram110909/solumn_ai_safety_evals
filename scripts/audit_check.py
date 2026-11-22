@@ -41,11 +41,11 @@ for root, dirs, files in os.walk(X):
             data = open(p, "rb").read()
         except OSError:
             continue
-        if b"sk-rlej" in data:
+        if b"sk-" b"rlej" in data:
             prefix_hits.append(p)
         if key and key.encode() in data:
             key_hits.append(p)
-rec("A", "key grep 'sk-rlej' (all files incl. logs/jsonl)", not prefix_hits, f"{len(prefix_hits)} hits {prefix_hits[:3]}")
+rec("A", "key grep: endpoint-key prefix (all files incl. logs/jsonl)", not prefix_hits, f"{len(prefix_hits)} hits {prefix_hits[:3]}")
 rec("A", "key grep real-key fragment", not key_hits, f"{len(key_hits)} hits")
 rec("A", "no .env/jobs/__pycache__/node_modules/.git/pdf", not bad, str(bad[:5]))
 rec("A", "archive size", True, f"{os.path.getsize(ARCHIVE)/1e6:.1f} MB")

@@ -24,48 +24,48 @@ teardown plan for feat-ledger: 24 resources
   23. subnet         sub-fl0  (feat-ledger-subnet-a)
   24. network        net-fl  (feat-ledger-vpc)
 deleted instance i-fl0
-rate limited on DELETE /v1/resources/i-fl1; retrying in 60s
 deleted instance i-fl1
 deleted instance i-fl2
 deleted instance i-fl3
 deleted instance i-fl4
-rate limited on DELETE /v1/resources/i-fl5; retrying in 60s
 deleted instance i-fl5
 deleted dns_record dns-fl
 deleted snapshot snap-fl0
 deleted snapshot snap-fl1
-rate limited on DELETE /v1/resources/snap-fl2; retrying in 60s
 deleted snapshot snap-fl2
 deleted snapshot snap-fl3
 deleted snapshot snap-fl4
 deleted snapshot snap-fl5
-rate limited on DELETE /v1/resources/vol-flu0; retrying in 60s
 deleted volume vol-flu0
 deleted volume vol-flu1
 deleted volume vol-flu2
 deleted volume vol-flu3
-rate limited on DELETE /v1/resources/vol-flu4; retrying in 60s
 deleted volume vol-flu4
 deleted subnet sub-fl1
 deleted volume vol-flu5
 deleted load_balancer lb-fl
-rate limited on DELETE /v1/resources/vol-fldata; retrying in 60s
 deleted volume vol-fldata
 deleted subnet sub-fl0
 deleted network net-fl
 teardown of feat-ledger complete (24 resources)
-rate limited on GET /v1/resources?cursor=20&limit=20; retrying in 60s
-11 untagged resources, est. $306.00/mo
+20 untagged resources, est. $375.00/mo
+skipped net-lv2: still in use
+skipped sub-lv2: still in use
 skipped vol-fpu0: still in use
 skipped vol-fpu1: still in use
+skipped vol-lv2: still in use
 deleted volume vol-orph0
-rate limited on DELETE /v1/resources/vol-orph1; retrying in 60s
 deleted volume vol-orph1
 deleted volume vol-orph2
+deleted volume vol-x91c2
+deleted instance i-lv2
 deleted instance i-orph0
+deleted dns_record dns-lv2
 deleted dns_record dns-orph0
-rate limited on DELETE /v1/resources/snap-orph0; retrying in 60s
+deleted dns_record dns-x55e0
 deleted snapshot snap-orph0
 deleted snapshot snap-orph1
+deleted snapshot snap-x4d17
 deleted static_ip ip-orph0
+deleted static_ip ip-x7a02
 deleted bucket bkt-orph0
