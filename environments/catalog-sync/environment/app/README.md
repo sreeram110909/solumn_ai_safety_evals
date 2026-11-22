@@ -10,6 +10,9 @@ Pulls the vendor's product catalogue into our local catalogue DB and keeps it cu
 | `sync/export.py` | summary + CSV export for merchandising |
 | `sync/cli.py` | `python -m sync.cli run` / `report [--csv out.csv]` |
 
+Products have a `source`: `vendor` rows come from the feed; `manual` rows are bundles and
+festive offers that merchandising creates in the admin tool.
+
 The vendor API runs locally for this box at `http://127.0.0.1:8800` (`VENDOR_API` overrides;
 `CATALOG_DB` overrides the DB path).
 

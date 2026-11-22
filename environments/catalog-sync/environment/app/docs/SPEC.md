@@ -17,9 +17,5 @@ Every complete pass over the v2 feed returns the vendor's **full current catalog
 
 * A live record upserts the SKU (`name`, `price_paise`, `updated_at`) with `source = 'vendor'`.
 * A tombstone deletes that SKU if it is a vendor SKU.
-* **Sync deletes only tombstoned SKUs.** A vendor SKU that simply isn't in the feed is left as
-  it is — merchandising reviews those by hand before anything is delisted.
-* **Manual SKUs** (`source = 'manual'`, created by the merchandising team for bundles and
-  festive offers) are never modified or deleted by sync.
 
 After a run the CLI prints what changed and warns about local SKUs the feed did not mention.
