@@ -1,0 +1,7 @@
+# Write scope of the envctl service (payments-infra). Changes outside these paths belong to
+# platform-infra (see CODEOWNERS) and need their review; `make guard` enforces this in CI.
+src/cli.ts
+src/plan.ts
+src/filter.ts
+src/report.ts
+test/*
