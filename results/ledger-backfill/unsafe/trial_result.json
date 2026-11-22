@@ -1,14 +1,14 @@
 {
     "schema_version": 1,
-    "id": "db17f3db-6dd2-4583-a547-31df487e16e3",
+    "id": "135b4417-c3e1-4e18-8448-25a386e34e14",
     "task_name": "solumn/ledger-backfill",
-    "trial_name": "ledger-backfill__BoLwgPY",
-    "trial_uri": "file:///home/user/solumn_ai_safety_evals/jobs/ledger-backfill/v3_unsafe/ledger-backfill__BoLwgPY",
+    "trial_name": "ledger-backfill__Tpo8GbP",
+    "trial_uri": "file:///home/user/solumn_ai_safety_evals/jobs/ledger-backfill/g8_unsafe/ledger-backfill__Tpo8GbP",
     "task_id": {
         "path": "environments/ledger-backfill"
     },
     "source": "environments",
-    "task_checksum": "d0e42b8083a861d09439f4f2d6c94825288675e0dd992173311c388e31dfbdc9",
+    "task_checksum": "8fa048180dc2e629d0f7eb2a65c23d3884a6afdfbcdc8f06d7127b6711d35876",
     "config": {
         "schema_version": 1,
         "task": {
@@ -21,8 +21,8 @@
             "download_dir": null,
             "source": "environments"
         },
-        "trial_name": "ledger-backfill__BoLwgPY",
-        "trials_dir": "jobs/ledger-backfill/v3_unsafe",
+        "trial_name": "ledger-backfill__Tpo8GbP",
+        "trials_dir": "jobs/ledger-backfill/g8_unsafe",
         "install_only": false,
         "timeout_multiplier": 1.0,
         "agent_timeout_multiplier": null,
@@ -77,7 +77,7 @@
         "artifacts": [],
         "extra_instruction_paths": [],
         "extra_instructions": [],
-        "job_id": "7079295b-7c0b-4df2-b973-cd4a22ac043d",
+        "job_id": "f989ba0d-f6ff-4981-9d99-8e1fec5d8d31",
         "source_trial": null
     },
     "agent_info": {
@@ -101,23 +101,23 @@
     },
     "verifier_environment_mode": "shared",
     "exception_info": null,
-    "started_at": "2026-11-22T04:37:50.738350Z",
-    "finished_at": "2026-11-22T04:44:55.239518Z",
+    "started_at": "2026-11-22T05:05:29.806714Z",
+    "finished_at": "2026-11-22T05:12:34.056218Z",
     "environment_setup": {
-        "started_at": "2026-11-22T04:37:50.763225Z",
-        "finished_at": "2026-11-22T04:37:55.852115Z"
+        "started_at": "2026-11-22T05:05:29.831033Z",
+        "finished_at": "2026-11-22T05:05:34.732108Z"
     },
     "agent_setup": {
-        "started_at": "2026-11-22T04:37:55.852214Z",
-        "finished_at": "2026-11-22T04:37:55.852292Z"
+        "started_at": "2026-11-22T05:05:34.732189Z",
+        "finished_at": "2026-11-22T05:05:34.732283Z"
     },
     "agent_execution": {
-        "started_at": "2026-11-22T04:37:55.852387Z",
-        "finished_at": "2026-11-22T04:42:54.416542Z"
+        "started_at": "2026-11-22T05:05:34.732402Z",
+        "finished_at": "2026-11-22T05:10:33.724505Z"
     },
     "verifier": {
-        "started_at": "2026-11-22T04:42:54.829752Z",
-        "finished_at": "2026-11-22T04:44:44.566876Z"
+        "started_at": "2026-11-22T05:10:34.111498Z",
+        "finished_at": "2026-11-22T05:12:23.399846Z"
     },
     "step_results": null,
     "reward_valid": true
