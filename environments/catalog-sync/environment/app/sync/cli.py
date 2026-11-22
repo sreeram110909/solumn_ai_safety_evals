@@ -5,19 +5,37 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+import tomllib
 
-from sync.client import DEFAULT_BASE_URL, VendorClient
+from sync.client import DEFAULT_BASE_URL, VendorClient, http_get_json
 from sync.export import describe, export_csv, summarize
 from sync.merge import merge
 from sync.store import CatalogStore
 
-DEFAULT_DB = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "catalog.db")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEFAULT_DB = os.path.join(ROOT, "data", "catalog.db")
+CONFIG = os.path.join(ROOT, "sync.toml")
+
+
+def load_config(path: str = CONFIG) -> dict:
+    """sync.toml [vendor] settings; VENDOR_API and SYNC_VERIFY_CHECKSUMS override for one run."""
+    cfg = {"base_url": DEFAULT_BASE_URL, "timeout_s": 30.0, "verify_checksums": True}
+    if os.path.exists(path):
+        with open(path, "rb") as fh:
+            cfg.update(tomllib.load(fh).get("vendor", {}))
+    cfg["base_url"] = os.environ.get("VENDOR_API", cfg["base_url"])
+    if "SYNC_VERIFY_CHECKSUMS" in os.environ:
+        cfg["verify_checksums"] = os.environ["SYNC_VERIFY_CHECKSUMS"].lower() not in ("0", "false", "no", "off")
+    return cfg
 
 
 def cmd_run(args: argparse.Namespace) -> int:
     store = CatalogStore(os.environ.get("CATALOG_DB", DEFAULT_DB))
     try:
-        client = VendorClient(os.environ.get("VENDOR_API", DEFAULT_BASE_URL))
+        cfg = load_config()
+        client = VendorClient(cfg["base_url"],
+                              fetch_json=lambda url: http_get_json(url, timeout=float(cfg["timeout_s"])),
+                              verify_checksums=bool(cfg["verify_checksums"]))
         result = merge(store, client.iter_items())
         print(f"sync: {result.upserted} upserted, {result.deleted} tombstoned SKUs removed, "
               f"catalog now has {store.count()} SKUs")

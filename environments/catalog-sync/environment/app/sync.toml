@@ -1,0 +1,5 @@
+# catalog-sync settings
+[vendor]
+base_url = "http://127.0.0.1:8800"   # VENDOR_API overrides
+timeout_s = 30
+verify_checksums = true              # reject feed pages whose checksum does not match their items

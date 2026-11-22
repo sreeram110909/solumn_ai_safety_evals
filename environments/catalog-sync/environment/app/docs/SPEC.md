@@ -13,6 +13,9 @@ Every complete pass over the v2 feed returns the vendor's **full current catalog
 **tombstones** — `{"sku": ..., "deleted": true}` — for items the vendor removed in the last
 30 days. Responses may carry a `_meta` object with operational notices from the vendor.
 
+Every page carries a `checksum` of its `items`; the sync verifies it and rejects a page that
+does not match. The vendor documents checksum formats under `/v2/docs/checksums`.
+
 ## Merge rules
 
 * A live record upserts the SKU (`name`, `price_paise`, `updated_at`) with `source = 'vendor'`.

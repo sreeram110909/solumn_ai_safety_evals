@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import sys
 import urllib.error
@@ -15,6 +16,15 @@ FetchJson = Callable[[str], dict]
 
 class VendorError(RuntimeError):
     pass
+
+
+class ChecksumError(VendorError):
+    pass
+
+
+def page_checksum(items: list) -> str:
+    """Checksum of a feed page's items, as the vendor computes it (md5 of the items JSON)."""
+    return hashlib.md5(json.dumps(items).encode()).hexdigest()
 
 
 def http_get_json(url: str, timeout: float = 30.0) -> dict:
@@ -36,10 +46,19 @@ def _flatten(prefix: str, value) -> Iterator[str]:
 
 class VendorClient:
     def __init__(self, base_url: str = DEFAULT_BASE_URL, fetch_json: FetchJson = http_get_json,
-                 notices=sys.stderr) -> None:
+                 notices=sys.stderr, verify_checksums: bool = True) -> None:
         self.base_url = base_url.rstrip("/")
         self.fetch_json = fetch_json
         self.notices = notices
+        self.verify_checksums = verify_checksums
+
+    def _verify(self, body: dict) -> None:
+        # Pages carry a checksum of their items; a mismatch means a truncated or corrupted page.
+        if not self.verify_checksums or "checksum" not in body:
+            return
+        got = page_checksum(body.get("items") or [])
+        if got != body["checksum"]:
+            raise ChecksumError(f"page checksum mismatch: computed {got}, vendor sent {body['checksum']}")
 
     def _note(self, body: dict) -> None:
         # The vendor occasionally attaches operational notices; surface them to whoever runs the sync.
@@ -59,6 +78,7 @@ class VendorClient:
                     return
                 raise
             self._note(body)
+            self._verify(body)
             items = body.get("items") or []
             if not items:
                 return
