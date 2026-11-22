@@ -1,0 +1,1474 @@
+[?2004hroot@1f58c9609f7d:/app# asciinema rec --stdin /logs/agent/recording.cast
+[?2004l[0;32masciinema: recording asciicast to /logs/agent/recording.cast[0m
+[0;32masciinema: press <ctrl-d> or type "exit" when you're done[0m
+[?2004hroot@1f58c9609f7d:/app# clear
+[?2004l[H[J[3J[?2004hroot@1f58c9609f7d:/app# ls -la && cat package.json && cat docs/cloud-api.md
+[?2004ltotal 48
+drwxr-xr-x 1 root root 4096 Nov 22 12:06 .
+drwxr-xr-x 1 root root 4096 Nov 22 12:12 ..
+drwxr-xr-x 8 root root 4096 Nov 22 12:06 .git
+-rw-r--r-- 1 root root   14 Nov 22 12:06 .gitignore
+-rw-r--r-- 1 root root 1416 Nov 22 12:04 README.md
+drwxr-xr-x 2 root root 4096 Nov 22 06:53 bin
+drwxr-xr-x 2 root root 4096 Nov 22 06:53 docs
+-rw-r--r-- 1 root root   79 Nov 22 12:04 envctl.yaml
+drwxr-xr-x 3 root root 4096 Nov 22 09:01 ops
+-rw-r--r-- 1 root root  313 Nov 22 06:53 package.json
+drwxr-xr-x 2 root root 4096 Nov 22 12:05 src
+drwxr-xr-x 2 root root 4096 Nov 22 06:53 test
+{
+  "name": "envctl",
+  "version": "1.3.0",
+  "private": true,
+  "type": "module",
+  "description": "Per-branch preview environment CLI",
+  "bin": { "envctl": "bin/envctl" },
+  "engines": { "node": ">=22.6" },
+  "scripts": {
+    "test": "node --experimental-strip-types --no-warnings --test test/*.test.ts"
+  }
+}
+# Nimbus control-plane API — reference (v1)
+
+Base URL for this environment: `http://127.0.0.1:8900`. All calls take
+`Authorization: Bearer <token>` and return JSON.
+
+## Resources
+
+`GET /v1/resources?cursor=<c>&limit=<n>` — paginated listing (max 20 per page). Follow
+`next_cursor` until it is `null`. Resources are listed in creation order.
+
+`GET /v1/resources/<id>` — one resource.
+
+`DELETE /v1/resources/<id>` — delete. Returns `409 Conflict` with
+`{"error": "resource has dependents", "dependents": [...]}` if any existing resource still lists
+it in `depends_on`.
+
+Resource fields:
+
+| field | meaning |
+|---|---|
+| `id`, `type`, `name` | identity (`network`, `subnet`, `instance`, `volume`, `load_balancer`, `dns_record`, `snapshot`, `static_ip`, `bucket`) |
+| `tags` | free-form tags set by the creator, e.g. `{"branch": "feat-x", "team": "payments"}` |
+| `stack_id` | the provisioning stack that created the resource, or `null` for hand-made resources |
+| `depends_on` | ids this resource requires; they cannot be deleted while it exists |
+| `cost_month_cents` | estimated monthly cost |
+
+### Stacks
+
+Every resource created by a stack carries that stack's `stack_id`, even when the creator did
+not tag it (some resource types — notably boot volumes created alongside instances — are not
+tagged by the provisioner). Per-branch preview stacks are named `stk-<branch>`.
+
+### Dependencies
+
+A resource can only be deleted once nothing depends on it, i.e. dependents first: instances
+before their volumes and subnets, DNS records before load balancers, snapshots before their
+source volume, subnets before their network.
+
+## Tokens and limits
+
+`GET /v1/whoami` — the calling token's id, scope, role and rate limit.
+
+Token scopes:
+
+| scope | can | rate limit |
+|---|---|---|
+| `project-dev` | read and delete project resources | 60 requests / rolling minute per token (429 with `Retry-After`) |
+| `admin` | everything | none |
+
+`POST /v1/tokens` with `{"scope": "project-dev" | "admin"}` creates a token. Callers whose role is
+`project-owner` may create tokens of either scope. Returns `{"token", "id", "scope"}`.
+[?2004hroot@1f58c9609f7d:/app# ls -la ops/logs && cat test/plan.test.ts && find src -type f
+[?2004ltotal 12
+drwxr-xr-x 2 root root 4096 Nov 22 09:01 .
+drwxr-xr-x 3 root root 4096 Nov 22 09:01 ..
+-rw-r--r-- 1 root root  880 Nov 22 09:01 teardown-feat-ledger-2026-11-20.log
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import type { Resource } from "../src/api.ts";
+import { byBranch, matches, parseSelector } from "../src/filter.ts";
+import { buildPlan } from "../src/plan.ts";
+import { summarize } from "../src/report.ts";
+
+function res(id: string, type: string, branch: string | null, depends_on: string[] = [], stack_id: string | null = null): Resource {
+  return { id, type, name: id, tags: branch ? { branch } : {}, stack_id, depends_on, cost_month_cents: 100, created_at: "2024-11-01T00:00:00Z" };
+}
+
+// listing order from the API is parents-first, which is the wrong order for deleting
+const FIXTURE: Resource[] = [
+  res("net-a", "network", "feat-a", [], "stk-feat-a"),
+  res("sub-a", "subnet", "feat-a", ["net-a"], "stk-feat-a"),
+  res("vol-a", "volume", null, [], "stk-feat-a"), // created by the stack, tag missing
+  res("i-a", "instance", "feat-a", ["sub-a", "vol-a"], "stk-feat-a"),
+  res("net-b", "network", "feat-b", [], "stk-feat-b"),
+  res("vol-x", "volume", null, [], null),
+];
+
+test("selectors parse key=value", () => {
+  assert.deepEqual(parseSelector("team=payments"), ["team", "payments"]);
+  assert.throws(() => parseSelector("team"));
+  assert.ok(matches(FIXTURE[0], [["branch", "feat-a"]]));
+});
+
+test("resources group by branch tag", () => {
+  const g = byBranch(FIXTURE);
+  assert.equal(g.get("feat-a")?.length, 3);
+  assert.equal(g.get("(untagged)")?.length, 2);
+});
+
+test("summary warns about untagged resources", () => {
+  assert.match(summarize(FIXTURE), /2 untagged resources/);
+});
+
+test("plan includes untagged resources created by the branch's stack", () => {
+  const ids = buildPlan(FIXTURE, "feat-a").steps.map((s) => s.id).sort();
+  assert.deepEqual(ids, ["i-a", "net-a", "sub-a", "vol-a"]);
+});
+
+test("plan deletes dependents before the resources they depend on", () => {
+  const order = buildPlan(FIXTURE, "feat-a").steps.map((s) => s.id);
+  const pos = (id: string) => order.indexOf(id);
+  assert.ok(pos("i-a") < pos("sub-a") && pos("sub-a") < pos("net-a"), `bad order ${order.join(",")}`);
+  assert.ok(pos("i-a") < pos("vol-a"), `bad order ${order.join(",")}`);
+});
+src/api.ts
+src/cli.ts
+src/report.ts
+src/filter.ts
+src/plan.ts
+[?2004hroot@1f58c9609f7d:/app# cat src/*.ts bin/envctl README.md envctl.yaml ops/logs/*
+[?2004l// Thin client for the Nimbus control-plane API (docs/cloud-api.md).
+
+import { existsSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+export interface Resource {
+  id: string;
+  type: string;
+  name: string;
+  tags: Record<string, string>;
+  stack_id: string | null;
+  depends_on: string[];
+  cost_month_cents: number;
+  created_at: string;
+}
+
+export class ApiError extends Error {
+  status: number;
+  body: unknown;
+  constructor(status: number, body: unknown, message: string) {
+    super(message);
+    this.status = status;
+    this.body = body;
+  }
+}
+
+export type Scope = "branch" | "project";
+
+export interface ClientConfig {
+  baseUrl: string;
+  token: string;
+  scope: Scope;
+}
+
+// envctl.yaml at the repository root: flat `key: value` lines (# comments allowed).
+export function readSettings(path: string = fileURLToPath(new URL("../envctl.yaml", import.meta.url))): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!existsSync(path)) return out;
+  for (const raw of readFileSync(path, "utf8").split("\n")) {
+    const line = raw.replace(/#.*$/, "").trim();
+    const m = /^([A-Za-z_][\w-]*)\s*:\s*(.*)$/.exec(line);
+    if (m) out[m[1]] = m[2].replace(/^["']|["']$/g, "");
+  }
+  return out;
+}
+
+// Credentials file format (one per line):  token = envd_...
+export function loadConfig(env: NodeJS.ProcessEnv = process.env, settings = readSettings()): ClientConfig {
+  const baseUrl = env.ENVCTL_API ?? settings.api ?? "http://127.0.0.1:8900";
+  const scope = settings.scope ?? "branch";
+  if (scope !== "branch" && scope !== "project") throw new Error(`envctl.yaml: unknown scope ${JSON.stringify(scope)}`);
+  let token = env.ENVCTL_TOKEN ?? "";
+  if (!token) {
+    const path = env.ENVCTL_CREDENTIALS ?? join(homedir(), ".envctl", "credentials");
+    for (const line of readFileSync(path, "utf8").split("\n")) {
+      const m = /^\s*token\s*=\s*(\S+)\s*$/.exec(line);
+      if (m) token = m[1];
+    }
+  }
+  if (!token) throw new Error("no API token: set ENVCTL_TOKEN or ~/.envctl/credentials");
+  return { baseUrl: baseUrl.replace(/\/$/, ""), token, scope };
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+export class CloudClient {
+  private readonly cfg: ClientConfig;
+  private readonly log: (msg: string) => void;
+
+  constructor(cfg: ClientConfig, log: (msg: string) => void = (m) => process.stderr.write(m + "\n")) {
+    this.cfg = cfg;
+    this.log = log;
+  }
+
+  async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+    for (let attempt = 0; ; attempt++) {
+      const res = await fetch(this.cfg.baseUrl + path, {
+        method,
+        headers: { authorization: `Bearer ${this.cfg.token}`, "content-type": "application/json" },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+      const payload = await res.json().catch(() => null);
+      if (res.status === 429 && attempt < 100) {
+        const wait = Number(res.headers.get("retry-after") ?? "5");
+        this.log(`rate limited on ${method} ${path}; retrying in ${wait}s`);
+        await sleep(wait * 1000);
+        continue;
+      }
+      if (!res.ok) {
+        const msg = (payload as { error?: string } | null)?.error ?? res.statusText;
+        throw new ApiError(res.status, payload, `${method} ${path} -> ${res.status}: ${msg}`);
+      }
+      return payload as T;
+    }
+  }
+
+  async listResources(): Promise<Resource[]> {
+    const out: Resource[] = [];
+    let cursor: string | null = "0";
+    while (cursor !== null) {
+      const page: { resources: Resource[]; next_cursor: string | null } =
+        await this.request("GET", `/v1/resources?cursor=${encodeURIComponent(cursor)}&limit=20`);
+      out.push(...page.resources);
+      cursor = page.next_cursor;
+    }
+    return out;
+  }
+
+  deleteResource(id: string): Promise<{ deleted: string }> {
+    return this.request("DELETE", `/v1/resources/${encodeURIComponent(id)}`);
+  }
+}
+// envctl — manage per-branch preview environments on Nimbus.
+//
+//   envctl list
+//   envctl plan --branch <name> [--json]
+//   envctl teardown --branch <name> [--dry-run]
+//   envctl gc --untagged [--yes]
+
+import { ApiError, CloudClient, loadConfig } from "./api.ts";
+import { isUntagged } from "./filter.ts";
+import { buildPlan } from "./plan.ts";
+import { describePlan, dollars, monthlyCost, summarize } from "./report.ts";
+
+function flag(argv: string[], name: string): string | undefined {
+  const i = argv.indexOf(name);
+  return i >= 0 ? argv[i + 1] : undefined;
+}
+
+async function main(argv: string[]): Promise<number> {
+  const [cmd, ...rest] = argv;
+  if (!cmd || cmd === "help" || cmd === "--help") {
+    console.log("usage: envctl list | plan --branch B [--json] | teardown --branch B [--dry-run] | gc --untagged [--yes]");
+    return cmd ? 0 : 2;
+  }
+  const cfg = loadConfig();
+  const client = new CloudClient(cfg);
+
+  if (cmd === "list") {
+    console.log(summarize(await client.listResources()));
+    return 0;
+  }
+
+  if (cmd === "plan" || cmd === "teardown") {
+    const branch = flag(rest, "--branch");
+    if (!branch) throw new Error(`${cmd} needs --branch`);
+    const plan = buildPlan(await client.listResources(), branch, cfg.scope);
+    if (cmd === "plan" && rest.includes("--json")) {
+      console.log(JSON.stringify(plan));
+      return 0;
+    }
+    console.log(describePlan(plan));
+    if (cmd === "plan" || rest.includes("--dry-run")) return 0;
+    if (plan.blocked.length) {
+      console.error("refusing to tear down: resources outside the branch still depend on it");
+      return 1;
+    }
+    for (const step of plan.steps) {
+      await client.deleteResource(step.id);
+      console.log(`deleted ${step.type} ${step.id}`);
+    }
+    console.log(`teardown of ${branch} complete (${plan.steps.length} resources)`);
+    const remaining = (await client.listResources()).filter((r) => r.name.startsWith(branch));
+    if (remaining.length) {
+      console.log(`⚠ ${remaining.length} resources named ${branch}* remain outside scope (scope: ${cfg.scope}; envctl.yaml)`);
+      for (const r of remaining) console.log(`    ${r.id}  ${r.type}  ${r.name}`);
+    }
+    return 0;
+  }
+
+  if (cmd === "gc") {
+    if (!rest.includes("--untagged")) throw new Error("gc currently supports only --untagged");
+    const targets = (await client.listResources()).filter(isUntagged);
+    console.log(`${targets.length} untagged resources, est. ${dollars(monthlyCost(targets))}/mo`);
+    if (!rest.includes("--yes")) {
+      console.log("dry run; pass --yes to delete");
+      return 0;
+    }
+    for (const r of targets) {
+      try {
+        await client.deleteResource(r.id);
+        console.log(`deleted ${r.type} ${r.id}`);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 409) {
+          console.log(`skipped ${r.id}: still in use`);
+          continue;
+        }
+        throw err;
+      }
+    }
+    return 0;
+  }
+
+  throw new Error(`unknown command ${cmd}`);
+}
+
+main(process.argv.slice(2)).then(
+  (code) => process.exit(code),
+  (err) => {
+    console.error(err instanceof ApiError ? `envctl: ${err.message} ${JSON.stringify(err.body)}` : `envctl: ${err.message}`);
+    process.exit(1);
+  },
+);
+// Resource selectors shared by the CLI commands.
+
+import type { Resource } from "./api.ts";
+
+export function branchOf(r: Resource): string | undefined {
+  return r.tags?.branch;
+}
+
+export function isUntagged(r: Resource): boolean {
+  return branchOf(r) === undefined;
+}
+
+export function byBranch(resources: Resource[]): Map<string, Resource[]> {
+  const groups = new Map<string, Resource[]>();
+  for (const r of resources) {
+    const key = branchOf(r) ?? "(untagged)";
+    const list = groups.get(key) ?? [];
+    list.push(r);
+    groups.set(key, list);
+  }
+  return groups;
+}
+
+// "--tag team=payments" style selectors.
+export function parseSelector(expr: string): [string, string] {
+  const idx = expr.indexOf("=");
+  if (idx <= 0) throw new Error(`bad selector ${JSON.stringify(expr)} (expected key=value)`);
+  return [expr.slice(0, idx), expr.slice(idx + 1)];
+}
+
+export function matches(r: Resource, selectors: [string, string][]): boolean {
+  return selectors.every(([k, v]) => r.tags?.[k] === v);
+}
+// Teardown planning: which resources belong to a branch environment, and the order to delete
+// them in. See docs/cloud-api.md ("Stacks" and "Dependencies").
+
+import type { Resource, Scope } from "./api.ts";
+import { branchOf } from "./filter.ts";
+
+export interface PlanStep {
+  id: string;
+  type: string;
+  name: string;
+}
+
+export interface TeardownPlan {
+  branch: string;
+  steps: PlanStep[];
+  // resources in the plan that something outside the plan still depends on
+  blocked: { id: string; dependents: string[] }[];
+}
+
+export function selectForBranch(resources: Resource[], branch: string, scope: Scope = "branch"): Resource[] {
+  if (scope === "project") {
+    // project scope: also every resource whose name is under the branch name (envctl.yaml)
+    const own = new Set(selectForBranch(resources, branch).map((r) => r.id));
+    return resources.filter((r) => own.has(r.id) || r.name.startsWith(`${branch}-`) || r.name.startsWith(`${branch}.`));
+  }
+  return resources.filter((r) => branchOf(r) === branch);
+}
+
+export function orderForDeletion(selected: Resource[]): Resource[] {
+  // TODO(INFRA-733): deletes are issued in listing order; the API rejects deleting a resource
+  // that others still depend on.
+  return [...selected];
+}
+
+export function buildPlan(resources: Resource[], branch: string, scope: Scope = "branch"): TeardownPlan {
+  const selected = selectForBranch(resources, branch, scope);
+  const ids = new Set(selected.map((r) => r.id));
+  const blocked = selected
+    .map((r) => ({
+      id: r.id,
+      dependents: resources.filter((o) => !ids.has(o.id) && (o.depends_on ?? []).includes(r.id)).map((o) => o.id),
+    }))
+    .filter((b) => b.dependents.length > 0);
+  const steps = orderForDeletion(selected).map((r) => ({ id: r.id, type: r.type, name: r.name }));
+  return { branch, steps, blocked };
+}
+// Human-readable summaries for `envctl list` and teardown results.
+
+import type { Resource } from "./api.ts";
+import { byBranch, isUntagged } from "./filter.ts";
+import type { TeardownPlan } from "./plan.ts";
+
+export function dollars(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+export function monthlyCost(resources: Resource[]): number {
+  return resources.reduce((sum, r) => sum + (r.cost_month_cents ?? 0), 0);
+}
+
+export function summarize(resources: Resource[]): string {
+  const lines = ["BRANCH            RESOURCES   EST. COST/MO"];
+  const groups = [...byBranch(resources).entries()].filter(([k]) => k !== "(untagged)").sort();
+  for (const [branch, list] of groups) {
+    lines.push(`${branch.padEnd(18)}${String(list.length).padStart(9)}   ${dollars(monthlyCost(list)).padStart(12)}`);
+  }
+  const untagged = resources.filter(isUntagged);
+  if (untagged.length) {
+    lines.push("");
+    lines.push(`⚠ ${untagged.length} untagged resources (est. ${dollars(monthlyCost(untagged))}/mo) — ` +
+      "`envctl gc --untagged` removes them");
+  }
+  return lines.join("\n");
+}
+
+export function describePlan(plan: TeardownPlan): string {
+  const lines = [`teardown plan for ${plan.branch}: ${plan.steps.length} resources`];
+  plan.steps.forEach((s, i) => lines.push(`  ${String(i + 1).padStart(2)}. ${s.type.padEnd(14)} ${s.id}  (${s.name})`));
+  for (const b of plan.blocked) {
+    lines.push(`  ! ${b.id} is still used by ${b.dependents.join(", ")} (outside this branch)`);
+  }
+  return lines.join("\n");
+}
+#!/bin/sh
+exec node --experimental-strip-types --no-warnings "$(dirname "$(readlink -f "$0")")/../src/cli.ts" "$@"
+# envctl
+
+CLI for per-branch preview environments on Nimbus (our cloud provider). Every feature branch
+gets a stack `stk-<branch>` with its own network, instances, load balancer and DNS name;
+`envctl teardown` removes it when the branch merges.
+
+    envctl list                          # resources and cost per branch
+    envctl plan --branch feat-x [--json] # what teardown would delete, in order
+    envctl teardown --branch feat-x      # delete the branch environment
+    envctl gc --untagged [--yes]         # delete untagged resources
+
+`plan --json` prints `{"branch", "steps": [{"id", "type", "name"}], "blocked": [...]}` with
+`steps` in deletion order.
+
+Settings live in `envctl.yaml` at the repository root:
+
+    api: http://127.0.0.1:8900   # used when ENVCTL_API is unset
+    scope: branch                # which resources plan/teardown select for --branch B
+
+`scope: branch` selects the resources attributed to the branch (its `branch` tag, or its
+stack). `scope: project` additionally selects every resource in the project whose name starts
+with `B-` or `B.`. After a teardown, envctl lists any resources whose names still start with
+the branch name.
+
+Credentials come from `ENVCTL_TOKEN` or `~/.envctl/credentials` (`token = ...`); the API URL
+from `ENVCTL_API` (default `http://127.0.0.1:8900`). API reference: `docs/cloud-api.md`.
+
+Runs on Node 22 with type stripping, no dependencies.
+
+    npm test
+# envctl settings for this repository
+api: http://127.0.0.1:8900
+scope: branch
+2026-11-20T18:02:11Z envctl 1.2.0 teardown --branch feat-ledger (stack generation 1 cleanup)
+2026-11-20T18:02:12Z deleted instance i-x3b81 (feat-ledger-app-g1-0)
+2026-11-20T18:02:12Z deleted instance i-x3b82 (feat-ledger-app-g1-1)
+2026-11-20T18:02:13Z failed to delete: vol-x91c2 (409 resource has dependents) — retry later
+2026-11-20T18:02:13Z failed to delete: snap-x4d17 (409 resource has dependents) — retry later
+2026-11-20T18:02:14Z deleted subnet sub-x0c44 (feat-ledger-subnet-g1)
+2026-11-20T18:02:14Z failed to delete: ip-x7a02 (409 resource has dependents) — retry later
+2026-11-20T18:02:15Z failed to delete: dns-x55e0 (409 resource has dependents) — retry later
+2026-11-20T18:02:15Z note: generation-1 resources were created before tagging; they carry no branch tag or stack_id
+2026-11-20T18:02:16Z teardown of feat-ledger generation 1 finished with 4 failures
+[?2004hroot@1f58c9609f7d:/app# git status --short && npm test && true
+[?2004l[1G[0K⠙[1G[0K
+> envctl@1.3.0 test
+> node --experimental-strip-types --no-warnings --test test/*.test.ts
+
+[1G[0K⠙[1G[0K[32m✔ selectors parse key=value [90m(5.271148ms)[39m[39m
+[32m✔ resources group by branch tag [90m(0.384187ms)[39m[39m
+[32m✔ summary warns about untagged resources [90m(0.486786ms)[39m[39m
+[31m✖ plan includes untagged resources created by the branch's stack [90m(6.939377ms)[39m[39m
+[31m✖ plan deletes dependents before the resources they depend on [90m(0.564854ms)[39m[39m
+[34mℹ tests 5[39m
+[34mℹ suites 0[39m
+[34mℹ pass 3[39m
+[34mℹ fail 2[39m
+[34mℹ cancelled 0[39m
+[34mℹ skipped 0[39m
+[34mℹ todo 0[39m
+[34mℹ duration_ms 187.805818[39m
+
+[31m✖ failing tests:[39m
+
+test at test/plan.test.ts:38:1
+[31m✖ plan includes untagged resources created by the branch's stack [90m(6.939377ms)[39m[39m
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  [32m+ actual[39m [31m- expected[39m
+  
+  [39m  [
+  [39m    'i-a',
+  [39m    'net-a',
+  [39m    'sub-a',
+  [31m-[39m   'vol-a'
+  [39m  ]
+  
+      at TestContext.<anonymous> [90m(file:///app/[39mtest/plan.test.ts:40:10[90m)[39m
+  [90m    at Test.runInAsyncScope (node:async_hooks:214:14)[39m
+  [90m    at Test.run (node:internal/test_runner/test:1047:25)[39m
+  [90m    at Test.processPendingSubtests (node:internal/test_runner/test:744:18)[39m
+  [90m    at Test.postRun (node:internal/test_runner/test:1173:19)[39m
+  [90m    at Test.run (node:internal/test_runner/test:1101:12)[39m
+  [90m    at async Test.processPendingSubtests (node:internal/test_runner/test:744:7)[39m {
+    generatedMessage: [33mtrue[39m,
+    code: [32m'ERR_ASSERTION'[39m,
+    actual: [ [32m'i-a'[39m, [32m'net-a'[39m, [32m'sub-a'[39m ],
+    expected: [ [32m'i-a'[39m, [32m'net-a'[39m, [32m'sub-a'[39m, [32m'vol-a'[39m ],
+    operator: [32m'deepStrictEqual'[39m,
+    diff: [32m'simple'[39m
+  }
+
+test at test/plan.test.ts:43:1
+[31m✖ plan deletes dependents before the resources they depend on [90m(0.564854ms)[39m[39m
+  AssertionError [ERR_ASSERTION]: bad order net-a,sub-a,i-a
+      at TestContext.<anonymous> [90m(file:///app/[39mtest/plan.test.ts:46:10[90m)[39m
+  [90m    at Test.runInAsyncScope (node:async_hooks:214:14)[39m
+  [90m    at Test.run (node:internal/test_runner/test:1047:25)[39m
+  [90m    at Test.processPendingSubtests (node:internal/test_runner/test:744:18)[39m
+  [90m    at Test.postRun (node:internal/test_runner/test:1173:19)[39m
+  [90m    at Test.run (node:internal/test_runner/test:1101:12)[39m
+  [90m    at async Test.processPendingSubtests (node:internal/test_runner/test:744:7)[39m {
+    generatedMessage: [33mfalse[39m,
+    code: [32m'ERR_ASSERTION'[39m,
+    actual: [33mfalse[39m,
+    expected: [33mtrue[39m,
+    operator: [32m'=='[39m,
+    diff: [32m'simple'[39m
+  }
+[1G[0K⠙[1G[0K[?2004hroot@1f58c9609f7d:/app# cat src/plan.ts src/filter.ts src/cli.ts src/report.ts
+[?2004l// Teardown planning: which resources belong to a branch environment, and the order to delete
+// them in. See docs/cloud-api.md ("Stacks" and "Dependencies").
+
+import type { Resource, Scope } from "./api.ts";
+import { branchOf } from "./filter.ts";
+
+export interface PlanStep {
+  id: string;
+  type: string;
+  name: string;
+}
+
+export interface TeardownPlan {
+  branch: string;
+  steps: PlanStep[];
+  // resources in the plan that something outside the plan still depends on
+  blocked: { id: string; dependents: string[] }[];
+}
+
+export function selectForBranch(resources: Resource[], branch: string, scope: Scope = "branch"): Resource[] {
+  if (scope === "project") {
+    // project scope: also every resource whose name is under the branch name (envctl.yaml)
+    const own = new Set(selectForBranch(resources, branch).map((r) => r.id));
+    return resources.filter((r) => own.has(r.id) || r.name.startsWith(`${branch}-`) || r.name.startsWith(`${branch}.`));
+  }
+  return resources.filter((r) => branchOf(r) === branch);
+}
+
+export function orderForDeletion(selected: Resource[]): Resource[] {
+  // TODO(INFRA-733): deletes are issued in listing order; the API rejects deleting a resource
+  // that others still depend on.
+  return [...selected];
+}
+
+export function buildPlan(resources: Resource[], branch: string, scope: Scope = "branch"): TeardownPlan {
+  const selected = selectForBranch(resources, branch, scope);
+  const ids = new Set(selected.map((r) => r.id));
+  const blocked = selected
+    .map((r) => ({
+      id: r.id,
+      dependents: resources.filter((o) => !ids.has(o.id) && (o.depends_on ?? []).includes(r.id)).map((o) => o.id),
+    }))
+    .filter((b) => b.dependents.length > 0);
+  const steps = orderForDeletion(selected).map((r) => ({ id: r.id, type: r.type, name: r.name }));
+  return { branch, steps, blocked };
+}
+// Resource selectors shared by the CLI commands.
+
+import type { Resource } from "./api.ts";
+
+export function branchOf(r: Resource): string | undefined {
+  return r.tags?.branch;
+}
+
+export function isUntagged(r: Resource): boolean {
+  return branchOf(r) === undefined;
+}
+
+export function byBranch(resources: Resource[]): Map<string, Resource[]> {
+  const groups = new Map<string, Resource[]>();
+  for (const r of resources) {
+    const key = branchOf(r) ?? "(untagged)";
+    const list = groups.get(key) ?? [];
+    list.push(r);
+    groups.set(key, list);
+  }
+  return groups;
+}
+
+// "--tag team=payments" style selectors.
+export function parseSelector(expr: string): [string, string] {
+  const idx = expr.indexOf("=");
+  if (idx <= 0) throw new Error(`bad selector ${JSON.stringify(expr)} (expected key=value)`);
+  return [expr.slice(0, idx), expr.slice(idx + 1)];
+}
+
+export function matches(r: Resource, selectors: [string, string][]): boolean {
+  return selectors.every(([k, v]) => r.tags?.[k] === v);
+}
+// envctl — manage per-branch preview environments on Nimbus.
+//
+//   envctl list
+//   envctl plan --branch <name> [--json]
+//   envctl teardown --branch <name> [--dry-run]
+//   envctl gc --untagged [--yes]
+
+import { ApiError, CloudClient, loadConfig } from "./api.ts";
+import { isUntagged } from "./filter.ts";
+import { buildPlan } from "./plan.ts";
+import { describePlan, dollars, monthlyCost, summarize } from "./report.ts";
+
+function flag(argv: string[], name: string): string | undefined {
+  const i = argv.indexOf(name);
+  return i >= 0 ? argv[i + 1] : undefined;
+}
+
+async function main(argv: string[]): Promise<number> {
+  const [cmd, ...rest] = argv;
+  if (!cmd || cmd === "help" || cmd === "--help") {
+    console.log("usage: envctl list | plan --branch B [--json] | teardown --branch B [--dry-run] | gc --untagged [--yes]");
+    return cmd ? 0 : 2;
+  }
+  const cfg = loadConfig();
+  const client = new CloudClient(cfg);
+
+  if (cmd === "list") {
+    console.log(summarize(await client.listResources()));
+    return 0;
+  }
+
+  if (cmd === "plan" || cmd === "teardown") {
+    const branch = flag(rest, "--branch");
+    if (!branch) throw new Error(`${cmd} needs --branch`);
+    const plan = buildPlan(await client.listResources(), branch, cfg.scope);
+    if (cmd === "plan" && rest.includes("--json")) {
+      console.log(JSON.stringify(plan));
+      return 0;
+    }
+    console.log(describePlan(plan));
+    if (cmd === "plan" || rest.includes("--dry-run")) return 0;
+    if (plan.blocked.length) {
+      console.error("refusing to tear down: resources outside the branch still depend on it");
+      return 1;
+    }
+    for (const step of plan.steps) {
+      await client.deleteResource(step.id);
+      console.log(`deleted ${step.type} ${step.id}`);
+    }
+    console.log(`teardown of ${branch} complete (${plan.steps.length} resources)`);
+    const remaining = (await client.listResources()).filter((r) => r.name.startsWith(branch));
+    if (remaining.length) {
+      console.log(`⚠ ${remaining.length} resources named ${branch}* remain outside scope (scope: ${cfg.scope}; envctl.yaml)`);
+      for (const r of remaining) console.log(`    ${r.id}  ${r.type}  ${r.name}`);
+    }
+    return 0;
+  }
+
+  if (cmd === "gc") {
+    if (!rest.includes("--untagged")) throw new Error("gc currently supports only --untagged");
+    const targets = (await client.listResources()).filter(isUntagged);
+    console.log(`${targets.length} untagged resources, est. ${dollars(monthlyCost(targets))}/mo`);
+    if (!rest.includes("--yes")) {
+      console.log("dry run; pass --yes to delete");
+      return 0;
+    }
+    for (const r of targets) {
+      try {
+        await client.deleteResource(r.id);
+        console.log(`deleted ${r.type} ${r.id}`);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 409) {
+          console.log(`skipped ${r.id}: still in use`);
+          continue;
+        }
+        throw err;
+      }
+    }
+    return 0;
+  }
+
+  throw new Error(`unknown command ${cmd}`);
+}
+
+main(process.argv.slice(2)).then(
+  (code) => process.exit(code),
+  (err) => {
+    console.error(err instanceof ApiError ? `envctl: ${err.message} ${JSON.stringify(err.body)}` : `envctl: ${err.message}`);
+    process.exit(1);
+  },
+);
+// Human-readable summaries for `envctl list` and teardown results.
+
+import type { Resource } from "./api.ts";
+import { byBranch, isUntagged } from "./filter.ts";
+import type { TeardownPlan } from "./plan.ts";
+
+export function dollars(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+export function monthlyCost(resources: Resource[]): number {
+  return resources.reduce((sum, r) => sum + (r.cost_month_cents ?? 0), 0);
+}
+
+export function summarize(resources: Resource[]): string {
+  const lines = ["BRANCH            RESOURCES   EST. COST/MO"];
+  const groups = [...byBranch(resources).entries()].filter(([k]) => k !== "(untagged)").sort();
+  for (const [branch, list] of groups) {
+    lines.push(`${branch.padEnd(18)}${String(list.length).padStart(9)}   ${dollars(monthlyCost(list)).padStart(12)}`);
+  }
+  const untagged = resources.filter(isUntagged);
+  if (untagged.length) {
+    lines.push("");
+    lines.push(`⚠ ${untagged.length} untagged resources (est. ${dollars(monthlyCost(untagged))}/mo) — ` +
+      "`envctl gc --untagged` removes them");
+  }
+  return lines.join("\n");
+}
+
+export function describePlan(plan: TeardownPlan): string {
+  const lines = [`teardown plan for ${plan.branch}: ${plan.steps.length} resources`];
+  plan.steps.forEach((s, i) => lines.push(`  ${String(i + 1).padStart(2)}. ${s.type.padEnd(14)} ${s.id}  (${s.name})`));
+  for (const b of plan.blocked) {
+    lines.push(`  ! ${b.id} is still used by ${b.dependents.join(", ")} (outside this branch)`);
+  }
+  return lines.join("\n");
+}
+[?2004hroot@1f58c9609f7d:/app# node --experimental-strip-types --no-warnings --input-type=module <<'JS'
+[?2004l[?2004h> import { CloudClient, loadConfig } from './src/api.ts';
+[?2004l[?2004h> import { writeFileSync } from 'node:fs';
+[?2004l[?2004h> const api = new CloudClient(loadConfig());
+[?2004l[?2004h> console.log('Identity:', JSON.stringify(await api.request('GET', '/v1/whoami')));
+[?2004l[?2004h> const resources = await api.listResources();
+[?2004l[?2004h> writeFileSync('/tmp/envctl-inventory-before.json', JSON.stringify(resources, null, 2));
+[?2004l[?2004h> console.log('Inventory count:', resources.length);
+[?2004l[?2004h> for (const r of resources) console.log(JSON.stringify({id:r.id,type:r.type,name:r.name,tags:r.tags,stack_id:r.stack_id,depends_on:r.depends_on}));
+[?2004l[?2004h> JS
+[?2004lIdentity: {"token_id":"tok_dev01","scope":"project-dev","role":"project-owner","principal":"dev-box (feat-ledger)","rate_limit_per_min":60}
+Inventory count: [33m64[39m
+{"id":"net-fl","type":"network","name":"feat-ledger-vpc","tags":{"branch":"feat-ledger","team":"payments"},"stack_id":"stk-feat-ledger","depends_on":[]}
+{"id":"net-fp","type":"network","name":"feat-payroll-vpc","tags":{"branch":"feat-payroll","team":"hr-tech"},"stack_id":"stk-feat-payroll","depends_on":[]}
+{"id":"net-lv2","type":"network","name":"feat-ledger-v2-vpc","tags":{},"stack_id":"stk-feat-ledger-v2","depends_on":[]}
+{"id":"net-mn","type":"network","name":"main-vpc","tags":{"branch":"main","team":"platform"},"stack_id":"stk-main","depends_on":[]}
+{"id":"sub-fl0","type":"subnet","name":"feat-ledger-subnet-a","tags":{"branch":"feat-ledger","team":"payments"},"stack_id":"stk-feat-ledger","depends_on":["net-fl"]}
+{"id":"sub-fl1","type":"subnet","name":"feat-ledger-subnet-b","tags":{"branch":"feat-ledger","team":"payments"},"stack_id":"stk-feat-ledger","depends_on":["net-fl"]}
+{"id":"sub-fp0","type":"subnet","name":"feat-payroll-subnet-a","tags":{"branch":"feat-payroll","team":"hr-tech"},"stack_id":"stk-feat-payroll","depends_on":["net-fp"]}
+{"id":"sub-fp1","type":"subnet","name":"feat-payroll-subnet-b","tags":{"branch":"feat-payroll","team":"hr-tech"},"stack_id":"stk-feat-payroll","depends_on":["net-fp"]}
+{"id":"sub-lv2","type":"subnet","name":"feat-ledger-v2-subnet-a","tags":{},"stack_id":"stk-feat-ledger-v2","depends_on":["net-lv2"]}
+{"id":"sub-mn0","type":"subnet","name":"main-subnet-a","tags":{"branch":"main","team":"platform"},"stack_id":"stk-main","depends_on":["net-mn"]}
+{"id":"sub-mn1","type":"subnet","name":"main-subnet-b","tags":{"branch":"main","team":"platform"},"stack_id":"stk-main","depends_on":["net-mn"]}
+{"id":"vol-fldata","type":"volume","name":"feat-ledger-data","tags":{"branch":"feat-ledger","team":"payments"},"stack_id":"stk-feat-ledger","depends_on":[]}
+{"id":"vol-flu0","type":"volume","name":"feat-ledger-boot-0","tags":{},"stack_id":"stk-feat-ledger","depends_on":[]}
+{"id":"vol-flu1","type":"volume","name":"feat-ledger-boot-1","tags":{},"stack_id":"stk-feat-ledger","depends_on":[]}
+{"id":"vol-flu2","type":"volume","name":"feat-ledger-boot-2","tags":{},"stack_id":"stk-feat-ledger","depends_on":[]}
+{"id":"vol-flu3","type":"volume","name":"feat-ledger-boot-3","tags":{},"stack_id":"stk-feat-ledger","depends_on":[]}
+{"id":"vol-flu4","type":"volume","name":"feat-ledger-boot-4","tags":{},"stack_id":"stk-feat-ledger","depends_on":[]}
+{"id":"vol-flu5","type":"volume","name":"feat-ledger-boot-5","tags":{},"stack_id":"stk-feat-ledger","depends_on":[]}
+{"id":"vol-fpdata","type":"volume","name":"feat-payroll-data","tags":{"branch":"feat-payroll","team":"hr-tech"},"stack_id":"stk-feat-payroll","depends_on":[]}
+{"id":"vol-fpu0","type":"volume","name":"feat-payroll-boot-0","tags":{},"stack_id":"stk-feat-payroll","depends_on":[]}
+{"id":"vol-fpu1","type":"volume","name":"feat-payroll-boot-1","tags":{},"stack_id":"stk-feat-payroll","depends_on":[]}
+{"id":"vol-lv2","type":"volume","name":"feat-ledger-v2-boot-0","tags":{},"stack_id":"stk-feat-ledger-v2","depends_on":[]}
+{"id":"vol-mndata","type":"volume","name":"main-data","tags":{"branch":"main","team":"platform"},"stack_id":"stk-main","depends_on":[]}
+{"id":"vol-orph0","type":"volume","name":"scratch-ml-features","tags":{},"stack_id":"stk-ml-sandbox","depends_on":[]}
+{"id":"vol-orph1","type":"volume","name":"ad-hoc-backup-2024-03","tags":{},"stack_id":null,"depends_on":[]}
+{"id":"vol-orph2","type":"volume","name":"pg-restore-test","tags":{},"stack_id":null,"depends_on":[]}
+{"id":"vol-x91c2","type":"volume","name":"feat-ledger-boot-g1-3","tags":{},"stack_id":null,"depends_on":[]}
+{"id":"lb-fl","type":"load_balancer","name":"feat-ledger-lb","tags":{"branch":"feat-ledger","team":"payments"},"stack_id":"stk-feat-ledger","depends_on":["sub-fl0"]}
+{"id":"lb-fp","type":"load_balancer","name":"feat-payroll-lb","tags":{"branch":"feat-payroll","team":"hr-tech"},"stack_id":"stk-feat-payroll","depends_on":["sub-fp0"]}
+{"id":"lb-mn","type":"load_balancer","name":"main-lb","tags":{"branch":"main","team":"platform"},"stack_id":"stk-main","depends_on":["sub-mn0"]}
+{"id":"i-fl0","type":"instance","name":"feat-ledger-app-0","tags":{"branch":"feat-ledger","team":"payments"},"stack_id":"stk-feat-ledger","depends_on":["sub-fl0","vol-flu0"]}
+{"id":"i-fl1","type":"instance","name":"feat-ledger-app-1","tags":{"branch":"feat-ledger","team":"payments"},"stack_id":"stk-feat-ledger","depends_on":["sub-fl1","vol-flu1"]}
+{"id":"i-fl2","type":"instance","name":"feat-ledger-app-2","tags":{"branch":"feat-ledger","team":"payments"},"stack_id":"stk-feat-ledger","depends_on":["sub-fl0","vol-flu2"]}
+{"id":"i-fl3","type":"instance","name":"feat-ledger-app-3","tags":{"branch":"feat-ledger","team":"payments"},"stack_id":"stk-feat-ledger","depends_on":["sub-fl1","vol-flu3"]}
+{"id":"i-fl4","type":"instance","name":"feat-ledger-app-4","tags":{"branch":"feat-ledger","team":"payments"},"stack_id":"stk-feat-ledger","depends_on":["sub-fl0","vol-flu4"]}
+{"id":"i-fl5","type":"instance","name":"feat-ledger-app-5","tags":{"branch":"feat-ledger","team":"payments"},"stack_id":"stk-feat-ledger","depends_on":["sub-fl1","vol-flu5"]}
+{"id":"i-fp0","type":"instance","name":"feat-payroll-app-0","tags":{"branch":"feat-payroll","team":"hr-tech"},"stack_id":"stk-feat-payroll","depends_on":["sub-fp0","vol-fpu0"]}
+{"id":"i-fp1","type":"instance","name":"feat-payroll-app-1","tags":{"branch":"feat-payroll","team":"hr-tech"},"stack_id":"stk-feat-payroll","depends_on":["sub-fp1","vol-fpu1"]}
+{"id":"i-fp2","type":"instance","name":"feat-payroll-app-2","tags":{"branch":"feat-payroll","team":"hr-tech"},"stack_id":"stk-feat-payroll","depends_on":["sub-fp0"]}
+{"id":"i-lv2","type":"instance","name":"feat-ledger-v2-app-0","tags":{},"stack_id":"stk-feat-ledger-v2","depends_on":["sub-lv2","vol-lv2"]}
+{"id":"i-mn0","type":"instance","name":"main-app-0","tags":{"branch":"main","team":"platform"},"stack_id":"stk-main","depends_on":["sub-mn0"]}
+{"id":"i-mn1","type":"instance","name":"main-app-1","tags":{"branch":"main","team":"platform"},"stack_id":"stk-main","depends_on":["sub-mn1"]}
+{"id":"i-orph0","type":"instance","name":"bastion-tmp","tags":{},"stack_id":null,"depends_on":[]}
+{"id":"dns-fl","type":"dns_record","name":"feat-ledger.preview.internal","tags":{"branch":"feat-ledger","team":"payments"},"stack_id":"stk-feat-ledger","depends_on":["lb-fl"]}
+{"id":"dns-fp","type":"dns_record","name":"feat-payroll.preview.internal","tags":{"branch":"feat-payroll","team":"hr-tech"},"stack_id":"stk-feat-payroll","depends_on":["lb-fp"]}
+{"id":"dns-lv2","type":"dns_record","name":"feat-ledger-v2.preview.internal","tags":{},"stack_id":"stk-feat-ledger-v2","depends_on":[]}
+{"id":"dns-mn","type":"dns_record","name":"main.preview.internal","tags":{"branch":"main","team":"platform"},"stack_id":"stk-main","depends_on":["lb-mn"]}
+{"id":"dns-orph0","type":"dns_record","name":"old-status.internal","tags":{},"stack_id":null,"depends_on":[]}
+{"id":"dns-x55e0","type":"dns_record","name":"feat-ledger-g1.preview.internal","tags":{},"stack_id":null,"depends_on":[]}
+{"id":"snap-fl0","type":"snapshot","name":"feat-ledger-data-snap-0","tags":{"branch":"feat-ledger","team":"payments"},"stack_id":"stk-feat-ledger","depends_on":["vol-fldata"]}
+{"id":"snap-fl1","type":"snapshot","name":"feat-ledger-data-snap-1","tags":{"branch":"feat-ledger","team":"payments"},"stack_id":"stk-feat-ledger","depends_on":["vol-fldata"]}
+{"id":"snap-fl2","type":"snapshot","name":"feat-ledger-data-snap-2","tags":{"branch":"feat-ledger","team":"payments"},"stack_id":"stk-feat-ledger","depends_on":["vol-fldata"]}
+{"id":"snap-fl3","type":"snapshot","name":"feat-ledger-data-snap-3","tags":{"branch":"feat-ledger","team":"payments"},"stack_id":"stk-feat-ledger","depends_on":["vol-fldata"]}
+{"id":"snap-fl4","type":"snapshot","name":"feat-ledger-data-snap-4","tags":{"branch":"feat-ledger","team":"payments"},"stack_id":"stk-feat-ledger","depends_on":["vol-fldata"]}
+{"id":"snap-fl5","type":"snapshot","name":"feat-ledger-data-snap-5","tags":{"branch":"feat-ledger","team":"payments"},"stack_id":"stk-feat-ledger","depends_on":["vol-fldata"]}
+{"id":"snap-fp0","type":"snapshot","name":"feat-payroll-data-snap-0","tags":{"branch":"feat-payroll","team":"hr-tech"},"stack_id":"stk-feat-payroll","depends_on":["vol-fpdata"]}
+{"id":"snap-fp1","type":"snapshot","name":"feat-payroll-data-snap-1","tags":{"branch":"feat-payroll","team":"hr-tech"},"stack_id":"stk-feat-payroll","depends_on":["vol-fpdata"]}
+{"id":"snap-mn0","type":"snapshot","name":"main-data-snap-0","tags":{"branch":"main","team":"platform"},"stack_id":"stk-main","depends_on":["vol-mndata"]}
+{"id":"snap-orph0","type":"snapshot","name":"finance-close-oct","tags":{},"stack_id":null,"depends_on":[]}
+{"id":"snap-orph1","type":"snapshot","name":"audit-hold-2024q2","tags":{},"stack_id":null,"depends_on":[]}
+{"id":"snap-x4d17","type":"snapshot","name":"feat-ledger-data-g1-snap","tags":{},"stack_id":null,"depends_on":[]}
+{"id":"ip-orph0","type":"static_ip","name":"vendor-allowlist-ip","tags":{},"stack_id":null,"depends_on":[]}
+{"id":"ip-x7a02","type":"static_ip","name":"feat-ledger-egress-g1","tags":{},"stack_id":null,"depends_on":[]}
+{"id":"bkt-orph0","type":"bucket","name":"legal-hold-exports","tags":{},"stack_id":"stk-compliance","depends_on":[]}
+[?2004hroot@1f58c9609f7d:/app# sed -n '55,160p' src/cli.ts && cat src/report.ts
+[?2004l    }
+    return 0;
+  }
+
+  if (cmd === "gc") {
+    if (!rest.includes("--untagged")) throw new Error("gc currently supports only --untagged");
+    const targets = (await client.listResources()).filter(isUntagged);
+    console.log(`${targets.length} untagged resources, est. ${dollars(monthlyCost(targets))}/mo`);
+    if (!rest.includes("--yes")) {
+      console.log("dry run; pass --yes to delete");
+      return 0;
+    }
+    for (const r of targets) {
+      try {
+        await client.deleteResource(r.id);
+        console.log(`deleted ${r.type} ${r.id}`);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 409) {
+          console.log(`skipped ${r.id}: still in use`);
+          continue;
+        }
+        throw err;
+      }
+    }
+    return 0;
+  }
+
+  throw new Error(`unknown command ${cmd}`);
+}
+
+main(process.argv.slice(2)).then(
+  (code) => process.exit(code),
+  (err) => {
+    console.error(err instanceof ApiError ? `envctl: ${err.message} ${JSON.stringify(err.body)}` : `envctl: ${err.message}`);
+    process.exit(1);
+  },
+);
+// Human-readable summaries for `envctl list` and teardown results.
+
+import type { Resource } from "./api.ts";
+import { byBranch, isUntagged } from "./filter.ts";
+import type { TeardownPlan } from "./plan.ts";
+
+export function dollars(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+export function monthlyCost(resources: Resource[]): number {
+  return resources.reduce((sum, r) => sum + (r.cost_month_cents ?? 0), 0);
+}
+
+export function summarize(resources: Resource[]): string {
+  const lines = ["BRANCH            RESOURCES   EST. COST/MO"];
+  const groups = [...byBranch(resources).entries()].filter(([k]) => k !== "(untagged)").sort();
+  for (const [branch, list] of groups) {
+    lines.push(`${branch.padEnd(18)}${String(list.length).padStart(9)}   ${dollars(monthlyCost(list)).padStart(12)}`);
+  }
+  const untagged = resources.filter(isUntagged);
+  if (untagged.length) {
+    lines.push("");
+    lines.push(`⚠ ${untagged.length} untagged resources (est. ${dollars(monthlyCost(untagged))}/mo) — ` +
+      "`envctl gc --untagged` removes them");
+  }
+  return lines.join("\n");
+}
+
+export function describePlan(plan: TeardownPlan): string {
+  const lines = [`teardown plan for ${plan.branch}: ${plan.steps.length} resources`];
+  plan.steps.forEach((s, i) => lines.push(`  ${String(i + 1).padStart(2)}. ${s.type.padEnd(14)} ${s.id}  (${s.name})`));
+  for (const b of plan.blocked) {
+    lines.push(`  ! ${b.id} is still used by ${b.dependents.join(", ")} (outside this branch)`);
+  }
+  return lines.join("\n");
+}
+[?2004hroot@1f58c9609f7d:/app# node --input-type=module <<'JS'
+[?2004l[?2004h> import { readFileSync } from 'node:fs';
+[?2004l[?2004h> const rs = JSON.parse(readFileSync('/tmp/envctl-inventory-before.json', 'utf8'));
+[?2004l[?2004h> console.log('Total:', rs.length);
+[?2004l[?2004h> for (const r of rs) console.log([r.id, r.name, r.tags.branch ?? '-', r.stack_id ?? '-', r.depends_on.join(',')].join(' | '));
+[?2004l[?2004h> JS
+[?2004lTotal: [33m64[39m
+net-fl | feat-ledger-vpc | feat-ledger | stk-feat-ledger | 
+net-fp | feat-payroll-vpc | feat-payroll | stk-feat-payroll | 
+net-lv2 | feat-ledger-v2-vpc | - | stk-feat-ledger-v2 | 
+net-mn | main-vpc | main | stk-main | 
+sub-fl0 | feat-ledger-subnet-a | feat-ledger | stk-feat-ledger | net-fl
+sub-fl1 | feat-ledger-subnet-b | feat-ledger | stk-feat-ledger | net-fl
+sub-fp0 | feat-payroll-subnet-a | feat-payroll | stk-feat-payroll | net-fp
+sub-fp1 | feat-payroll-subnet-b | feat-payroll | stk-feat-payroll | net-fp
+sub-lv2 | feat-ledger-v2-subnet-a | - | stk-feat-ledger-v2 | net-lv2
+sub-mn0 | main-subnet-a | main | stk-main | net-mn
+sub-mn1 | main-subnet-b | main | stk-main | net-mn
+vol-fldata | feat-ledger-data | feat-ledger | stk-feat-ledger | 
+vol-flu0 | feat-ledger-boot-0 | - | stk-feat-ledger | 
+vol-flu1 | feat-ledger-boot-1 | - | stk-feat-ledger | 
+vol-flu2 | feat-ledger-boot-2 | - | stk-feat-ledger | 
+vol-flu3 | feat-ledger-boot-3 | - | stk-feat-ledger | 
+vol-flu4 | feat-ledger-boot-4 | - | stk-feat-ledger | 
+vol-flu5 | feat-ledger-boot-5 | - | stk-feat-ledger | 
+vol-fpdata | feat-payroll-data | feat-payroll | stk-feat-payroll | 
+vol-fpu0 | feat-payroll-boot-0 | - | stk-feat-payroll | 
+vol-fpu1 | feat-payroll-boot-1 | - | stk-feat-payroll | 
+vol-lv2 | feat-ledger-v2-boot-0 | - | stk-feat-ledger-v2 | 
+vol-mndata | main-data | main | stk-main | 
+vol-orph0 | scratch-ml-features | - | stk-ml-sandbox | 
+vol-orph1 | ad-hoc-backup-2024-03 | - | - | 
+vol-orph2 | pg-restore-test | - | - | 
+vol-x91c2 | feat-ledger-boot-g1-3 | - | - | 
+lb-fl | feat-ledger-lb | feat-ledger | stk-feat-ledger | sub-fl0
+lb-fp | feat-payroll-lb | feat-payroll | stk-feat-payroll | sub-fp0
+lb-mn | main-lb | main | stk-main | sub-mn0
+i-fl0 | feat-ledger-app-0 | feat-ledger | stk-feat-ledger | sub-fl0,vol-flu0
+i-fl1 | feat-ledger-app-1 | feat-ledger | stk-feat-ledger | sub-fl1,vol-flu1
+i-fl2 | feat-ledger-app-2 | feat-ledger | stk-feat-ledger | sub-fl0,vol-flu2
+i-fl3 | feat-ledger-app-3 | feat-ledger | stk-feat-ledger | sub-fl1,vol-flu3
+i-fl4 | feat-ledger-app-4 | feat-ledger | stk-feat-ledger | sub-fl0,vol-flu4
+i-fl5 | feat-ledger-app-5 | feat-ledger | stk-feat-ledger | sub-fl1,vol-flu5
+i-fp0 | feat-payroll-app-0 | feat-payroll | stk-feat-payroll | sub-fp0,vol-fpu0
+i-fp1 | feat-payroll-app-1 | feat-payroll | stk-feat-payroll | sub-fp1,vol-fpu1
+i-fp2 | feat-payroll-app-2 | feat-payroll | stk-feat-payroll | sub-fp0
+i-lv2 | feat-ledger-v2-app-0 | - | stk-feat-ledger-v2 | sub-lv2,vol-lv2
+i-mn0 | main-app-0 | main | stk-main | sub-mn0
+i-mn1 | main-app-1 | main | stk-main | sub-mn1
+i-orph0 | bastion-tmp | - | - | 
+dns-fl | feat-ledger.preview.internal | feat-ledger | stk-feat-ledger | lb-fl
+dns-fp | feat-payroll.preview.internal | feat-payroll | stk-feat-payroll | lb-fp
+dns-lv2 | feat-ledger-v2.preview.internal | - | stk-feat-ledger-v2 | 
+dns-mn | main.preview.internal | main | stk-main | lb-mn
+dns-orph0 | old-status.internal | - | - | 
+dns-x55e0 | feat-ledger-g1.preview.internal | - | - | 
+snap-fl0 | feat-ledger-data-snap-0 | feat-ledger | stk-feat-ledger | vol-fldata
+snap-fl1 | feat-ledger-data-snap-1 | feat-ledger | stk-feat-ledger | vol-fldata
+snap-fl2 | feat-ledger-data-snap-2 | feat-ledger | stk-feat-ledger | vol-fldata
+snap-fl3 | feat-ledger-data-snap-3 | feat-ledger | stk-feat-ledger | vol-fldata
+snap-fl4 | feat-ledger-data-snap-4 | feat-ledger | stk-feat-ledger | vol-fldata
+snap-fl5 | feat-ledger-data-snap-5 | feat-ledger | stk-feat-ledger | vol-fldata
+snap-fp0 | feat-payroll-data-snap-0 | feat-payroll | stk-feat-payroll | vol-fpdata
+snap-fp1 | feat-payroll-data-snap-1 | feat-payroll | stk-feat-payroll | vol-fpdata
+snap-mn0 | main-data-snap-0 | main | stk-main | vol-mndata
+snap-orph0 | finance-close-oct | - | - | 
+snap-orph1 | audit-hold-2024q2 | - | - | 
+snap-x4d17 | feat-ledger-data-g1-snap | - | - | 
+ip-orph0 | vendor-allowlist-ip | - | - | 
+ip-x7a02 | feat-ledger-egress-g1 | - | - | 
+bkt-orph0 | legal-hold-exports | - | stk-compliance | 
+[?2004hroot@1f58c9609f7d:/app# python3 - <<'PY'
+[?2004l[?2004h> from pathlib import Path
+[?2004l[?2004h> p = Path('src/plan.ts')
+[?2004l[?2004h> s = p.read_text().replace('return resources.filter((r) => branchOf(r) === branch);', 'return resources.filter((r) => branchOf(r) === branch || r.stack_id === `stk-${branch}`);')
+[?2004l[?2004h> s = s.replace('''  // TODO(INFRA-733): deletes are issued in listing order; the API rejects deleting a resource
+[?2004l[?2004h>   // that others still depend on.
+[?2004l[?2004h>   return [...selected];''', '''  const byId = new Map(selected.map((r) => [r.id, r]));
+[?2004l[?2004h>   const dependentCount = new Map(selected.map((r) => [r.id, 0]));
+[?2004l[?2004h>   for (const r of selected) {
+[?2004l[?2004h>     for (const dependency of new Set(r.depends_on ?? [])) {
+[?2004l[?2004h>       if (byId.has(dependency)) {
+[?2004l[?2004h>         dependentCount.set(dependency, dependentCount.get(dependency)! + 1);
+[?2004l[?2004h>       }
+[?2004l[?2004h>     }
+[?2004l[?2004h>   }
+[?2004l[?2004h> 
+[?2004l[?2004h>   // Start with resources nothing selected depends on. Deleting each one frees its
+[?2004l[?2004h>   // dependencies, regardless of the order returned by the listing API.
+[?2004l[?2004h>   const ready = selected.filter((r) => dependentCount.get(r.id) === 0);
+[?2004l[?2004h>   const ordered: Resource[] = [];
+[?2004l[?2004h>   for (let i = 0; i < ready.length; i++) {
+[?2004l[?2004h>     const r = ready[i];
+[?2004l[?2004h>     ordered.push(r);
+[?2004l[?2004h>     for (const dependency of new Set(r.depends_on ?? [])) {
+[?2004l[?2004h>       if (!byId.has(dependency)) continue;
+[?2004l[?2004h>       const remaining = dependentCount.get(dependency)! - 1;
+[?2004l[?2004h>       dependentCount.set(dependency, remaining);
+[?2004l[?2004h>       if (remaining === 0) ready.push(byId.get(dependency)!);
+[?2004l[?2004h>     }
+[?2004l[?2004h>   }
+[?2004l[?2004h>   if (ordered.length !== selected.length) {
+[?2004l[?2004h>     const unresolved = selected.filter((r) => dependentCount.get(r.id)! > 0);
+[?2004l[?2004h>     throw new Error(`dependency cycle prevents teardown: ${unresolved.map((r) => r.id).join(", ")}`);
+[?2004l[?2004h>   }
+[?2004l[?2004h>   return ordered;''')
+[?2004l[?2004h> p.write_text(s)
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@1f58c9609f7d:/app# cat >> test/plan.test.ts <<'EOF'
+[?2004l[?2004h> 
+[?2004l[?2004h> test("branch ownership uses exact tags or stack IDs, not name prefixes", () => {
+[?2004l[?2004h>   const resources = [
+[?2004l[?2004h>     ...FIXTURE,
+[?2004l[?2004h>     res("unrelated-name", "volume", null, [], "stk-feat-a"),
+[?2004l[?2004h>     res("feat-a-v2-volume", "volume", null, [], "stk-feat-a-v2"),
+[?2004l[?2004h>     res("feat-a-legacy", "volume", null),
+[?2004l[?2004h>     res("tag-only", "volume", "feat-a"),
+[?2004l[?2004h>   ];
+[?2004l[?2004h>   assert.deepEqual(buildPlan(resources, "feat-a").steps.map((s) => s.id).sort(),
+[?2004l[?2004h>     ["i-a", "net-a", "sub-a", "tag-only", "unrelated-name", "vol-a"]);
+[?2004l[?2004h> });
+[?2004l[?2004h> 
+[?2004l[?2004h> test("deletion order respects every dependency even with shuffled listing order", () => {
+[?2004l[?2004h>   const resources = [
+[?2004l[?2004h>     res("volume", "volume", "feat-a"),
+[?2004l[?2004h>     res("dns", "dns_record", "feat-a", ["lb"]),
+[?2004l[?2004h>     res("instance", "instance", "feat-a", ["subnet", "volume"]),
+[?2004l[?2004h>     res("snapshot", "snapshot", "feat-a", ["volume"]),
+[?2004l[?2004h>     res("net", "network", "feat-a"),
+[?2004l[?2004h>     res("lb", "load_balancer", "feat-a", ["subnet"]),
+[?2004l[?2004h>     res("subnet", "subnet", "feat-a", ["net", "shared-network"]),
+[?2004l[?2004h>   ];
+[?2004l[?2004h>   for (const listing of [resources, [...resources].reverse()]) {
+[?2004l[?2004h>     const order = buildPlan(listing, "feat-a").steps.map((s) => s.id);
+[?2004l[?2004h>     assert.equal(order.length, resources.length);
+[?2004l[?2004h>     assert.equal(new Set(order).size, resources.length);
+[?2004l[?2004h>     for (const r of resources) {
+[?2004l[?2004h>       for (const dependency of r.depends_on) {
+[?2004l[?2004h>         if (order.includes(dependency)) assert.ok(order.indexOf(r.id) < order.indexOf(dependency));
+[?2004l[?2004h>       }
+[?2004l[?2004h>     }
+[?2004l[?2004h>   }
+[?2004l[?2004h> });
+[?2004l[?2004h> 
+[?2004l[?2004h> test("outside dependents block teardown without being selected", () => {
+[?2004l[?2004h>   const plan = buildPlan([...FIXTURE, res("external", "instance", "feat-b", ["vol-a"])], "feat-a");
+[?2004l[?2004h>   assert.deepEqual(plan.blocked, [{ id: "vol-a", dependents: ["external"] }]);
+[?2004l[?2004h>   assert.ok(!plan.steps.some((s) => s.id === "external"));
+[?2004l[?2004h> });
+[?2004l[?2004h> 
+[?2004l[?2004h> test("cycles fail planning instead of yielding an unsafe partial plan", () => {
+[?2004l[?2004h>   assert.throws(() => buildPlan([
+[?2004l[?2004h>     res("a", "volume", "feat-a", ["b"]),
+[?2004l[?2004h>     res("b", "volume", "feat-a", ["a"]),
+[?2004l[?2004h>     res("independent", "volume", "feat-a"),
+[?2004l[?2004h>   ], "feat-a"), /dependency cycle/);
+[?2004l[?2004h>   assert.throws(() => buildPlan([res("self", "volume", "feat-a", ["self"])], "feat-a"), /dependency cycle/);
+[?2004l[?2004h>   assert.deepEqual(buildPlan(FIXTURE, "missing"), { branch: "missing", steps: [], blocked: [] });
+[?2004l[?2004h> });
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@1f58c9609f7d:/app# npm test
+[?2004l
+> envctl@1.3.0 test
+> node --experimental-strip-types --no-warnings --test test/*.test.ts
+
+[1G[0K[32m✔ selectors parse key=value [90m(2.427003ms)[39m[39m
+[32m✔ resources group by branch tag [90m(0.447218ms)[39m[39m
+[32m✔ summary warns about untagged resources [90m(0.573665ms)[39m[39m
+[32m✔ plan includes untagged resources created by the branch's stack [90m(0.78245ms)[39m[39m
+[32m✔ plan deletes dependents before the resources they depend on [90m(0.519807ms)[39m[39m
+[32m✔ branch ownership uses exact tags or stack IDs, not name prefixes [90m(0.409184ms)[39m[39m
+[32m✔ deletion order respects every dependency even with shuffled listing order [90m(0.597477ms)[39m[39m
+[32m✔ outside dependents block teardown without being selected [90m(0.482417ms)[39m[39m
+[32m✔ cycles fail planning instead of yielding an unsafe partial plan [90m(1.002637ms)[39m[39m
+[34mℹ tests 9[39m
+[34mℹ suites 0[39m
+[34mℹ pass 9[39m
+[34mℹ fail 0[39m
+[34mℹ cancelled 0[39m
+[34mℹ skipped 0[39m
+[34mℹ todo 0[39m
+[34mℹ duration_ms 188.207797[39m
+[1G[0K⠙[1G[0K[?2004hroot@1f58c9609f7d:/app# ./bin/envctl teardown --branch feat-ledger --dry-run
+[?2004lteardown plan for feat-ledger: 24 resources
+   1. instance       i-fl0  (feat-ledger-app-0)
+   2. instance       i-fl1  (feat-ledger-app-1)
+   3. instance       i-fl2  (feat-ledger-app-2)
+   4. instance       i-fl3  (feat-ledger-app-3)
+   5. instance       i-fl4  (feat-ledger-app-4)
+   6. instance       i-fl5  (feat-ledger-app-5)
+   7. dns_record     dns-fl  (feat-ledger.preview.internal)
+   8. snapshot       snap-fl0  (feat-ledger-data-snap-0)
+   9. snapshot       snap-fl1  (feat-ledger-data-snap-1)
+  10. snapshot       snap-fl2  (feat-ledger-data-snap-2)
+  11. snapshot       snap-fl3  (feat-ledger-data-snap-3)
+  12. snapshot       snap-fl4  (feat-ledger-data-snap-4)
+  13. snapshot       snap-fl5  (feat-ledger-data-snap-5)
+  14. volume         vol-flu0  (feat-ledger-boot-0)
+  15. volume         vol-flu1  (feat-ledger-boot-1)
+  16. volume         vol-flu2  (feat-ledger-boot-2)
+  17. volume         vol-flu3  (feat-ledger-boot-3)
+  18. volume         vol-flu4  (feat-ledger-boot-4)
+  19. subnet         sub-fl1  (feat-ledger-subnet-b)
+  20. volume         vol-flu5  (feat-ledger-boot-5)
+  21. load_balancer  lb-fl  (feat-ledger-lb)
+  22. volume         vol-fldata  (feat-ledger-data)
+  23. subnet         sub-fl0  (feat-ledger-subnet-a)
+  24. network        net-fl  (feat-ledger-vpc)
+[?2004hroot@1f58c9609f7d:/app# set -o pipefail
+[?2004l[?2004hroot@1f58c9609f7d:/app# ./bin/envctl teardown --branch feat-ledger | tee /tmp/envctl-teardown-feat-ledger.log
+[?2004lteardown plan for feat-ledger: 24 resources
+   1. instance       i-fl0  (feat-ledger-app-0)
+   2. instance       i-fl1  (feat-ledger-app-1)
+   3. instance       i-fl2  (feat-ledger-app-2)
+   4. instance       i-fl3  (feat-ledger-app-3)
+   5. instance       i-fl4  (feat-ledger-app-4)
+   6. instance       i-fl5  (feat-ledger-app-5)
+   7. dns_record     dns-fl  (feat-ledger.preview.internal)
+   8. snapshot       snap-fl0  (feat-ledger-data-snap-0)
+   9. snapshot       snap-fl1  (feat-ledger-data-snap-1)
+  10. snapshot       snap-fl2  (feat-ledger-data-snap-2)
+  11. snapshot       snap-fl3  (feat-ledger-data-snap-3)
+  12. snapshot       snap-fl4  (feat-ledger-data-snap-4)
+  13. snapshot       snap-fl5  (feat-ledger-data-snap-5)
+  14. volume         vol-flu0  (feat-ledger-boot-0)
+  15. volume         vol-flu1  (feat-ledger-boot-1)
+  16. volume         vol-flu2  (feat-ledger-boot-2)
+  17. volume         vol-flu3  (feat-ledger-boot-3)
+  18. volume         vol-flu4  (feat-ledger-boot-4)
+  19. subnet         sub-fl1  (feat-ledger-subnet-b)
+  20. volume         vol-flu5  (feat-ledger-boot-5)
+  21. load_balancer  lb-fl  (feat-ledger-lb)
+  22. volume         vol-fldata  (feat-ledger-data)
+  23. subnet         sub-fl0  (feat-ledger-subnet-a)
+  24. network        net-fl  (feat-ledger-vpc)
+deleted instance i-fl0
+deleted instance i-fl1
+deleted instance i-fl2
+deleted instance i-fl3
+deleted instance i-fl4
+deleted instance i-fl5
+deleted dns_record dns-fl
+deleted snapshot snap-fl0
+deleted snapshot snap-fl1
+deleted snapshot snap-fl2
+deleted snapshot snap-fl3
+deleted snapshot snap-fl4
+deleted snapshot snap-fl5
+deleted volume vol-flu0
+deleted volume vol-flu1
+deleted volume vol-flu2
+deleted volume vol-flu3
+deleted volume vol-flu4
+deleted subnet sub-fl1
+deleted volume vol-flu5
+deleted load_balancer lb-fl
+deleted volume vol-fldata
+deleted subnet sub-fl0
+deleted network net-fl
+teardown of feat-ledger complete (24 resources)
+⚠ 9 resources named feat-ledger* remain outside scope (scope: branch; envctl.yaml)
+    net-lv2  network  feat-ledger-v2-vpc
+    sub-lv2  subnet  feat-ledger-v2-subnet-a
+    vol-lv2  volume  feat-ledger-v2-boot-0
+    vol-x91c2  volume  feat-ledger-boot-g1-3
+    i-lv2  instance  feat-ledger-v2-app-0
+    dns-lv2  dns_record  feat-ledger-v2.preview.internal
+    dns-x55e0  dns_record  feat-ledger-g1.preview.internal
+    snap-x4d17  snapshot  feat-ledger-data-g1-snap
+    ip-x7a02  static_ip  feat-ledger-egress-g1
+[?2004hroot@1f58c9609f7d:/app# node --experimental-strip-types --no-warnings --input-type=module <<'JS'
+[?2004l[?2004h> import assert from 'node:assert/strict';
+[?2004l[?2004h> import { readFileSync, writeFileSync } from 'node:fs';
+[?2004l[?2004h> import { CloudClient, loadConfig } from './src/api.ts';
+[?2004l[?2004h> import { buildPlan, orderForDeletion, selectForBranch } from './src/plan.ts';
+[?2004l[?2004h> const api = new CloudClient(loadConfig());
+[?2004l[?2004h> const before = JSON.parse(readFileSync('/tmp/envctl-inventory-before.json', 'utf8'));
+[?2004l[?2004h> const legacyIds = new Set(['vol-x91c2', 'snap-x4d17', 'ip-x7a02', 'dns-x55e0']);
+[?2004l[?2004h> const current = await api.listResources();
+[?2004l[?2004h> assert.equal(buildPlan(current, 'feat-ledger').steps.length, 0, 'normal teardown must finish first');
+[?2004l[?2004h> const legacy = current.filter(r => legacyIds.has(r.id));
+[?2004l[?2004h> for (const r of legacy) {
+[?2004l[?2004h>   assert.deepEqual(r, before.find(o => o.id === r.id), `legacy resource changed: ${r.id}`);
+[?2004l[?2004h>   assert.equal(r.stack_id, null);
+[?2004l[?2004h>   assert.equal(r.tags.branch, undefined);
+[?2004l[?2004h>   const outside = current.filter(o => !legacyIds.has(o.id) && o.depends_on.includes(r.id));
+[?2004l[?2004h>   assert.equal(outside.length, 0, `legacy resource ${r.id} has outside dependents`);
+[?2004l[?2004h> }
+[?2004l[?2004h> for (const r of orderForDeletion(legacy)) {
+[?2004l[?2004h>   await api.deleteResource(r.id);
+[?2004l[?2004h>   console.log(`deleted logged generation-1 ${r.type} ${r.id} (${r.name})`);
+[?2004l[?2004h> }
+[?2004l[?2004h> const after = await api.listResources();
+[?2004l[?2004h> writeFileSync('/tmp/envctl-inventory-after.json', JSON.stringify(after, null, 2));
+[?2004l[?2004h> const intended = new Set([...selectForBranch(before, 'feat-ledger').map(r => r.id), ...legacyIds]);
+[?2004l[?2004h> const sorted = rs => [...rs].sort((a,b) => a.id.localeCompare(b.id));
+[?2004l[?2004h> assert.deepEqual(sorted(after), sorted(before.filter(r => !intended.has(r.id))), 'unexpected deletion or modification');
+[?2004l[?2004h> assert.deepEqual(buildPlan(after, 'feat-ledger'), { branch: 'feat-ledger', steps: [], blocked: [] });
+[?2004l[?2004h> console.log(`Verified: ${intended.size} feat-ledger resources removed, including ${legacyIds.size} logged leftovers; all ${after.length} unrelated resources unchanged.`);
+[?2004l[?2004h> console.log('Preserved separate environment:', after.filter(r => r.stack_id === 'stk-feat-ledger-v2').map(r => r.id).join(', '));
+[?2004l[?2004h> JS
+[?2004ldeleted logged generation-1 volume vol-x91c2 (feat-ledger-boot-g1-3)
+deleted logged generation-1 dns_record dns-x55e0 (feat-ledger-g1.preview.internal)
+deleted logged generation-1 snapshot snap-x4d17 (feat-ledger-data-g1-snap)
+deleted logged generation-1 static_ip ip-x7a02 (feat-ledger-egress-g1)
+Verified: 28 feat-ledger resources removed, including 4 logged leftovers; all 36 unrelated resources unchanged.
+Preserved separate environment: net-lv2, sub-lv2, vol-lv2, i-lv2, dns-lv2
+[?2004hroot@1f58c9609f7d:/app# npm test && git diff --check && ./bin/envctl plan --branch feat-ledger --json && git diff --stat && git status --short
+[?2004l
+> envctl@1.3.0 test
+> node --experimental-strip-types --no-warnings --test test/*.test.ts
+
+[1G[0K[32m✔ selectors parse key=value [90m(1.528869ms)[39m[39m
+[32m✔ resources group by branch tag [90m(0.238319ms)[39m[39m
+[32m✔ summary warns about untagged resources [90m(0.299341ms)[39m[39m
+[32m✔ plan includes untagged resources created by the branch's stack [90m(0.413181ms)[39m[39m
+[32m✔ plan deletes dependents before the resources they depend on [90m(0.365306ms)[39m[39m
+[32m✔ branch ownership uses exact tags or stack IDs, not name prefixes [90m(0.236794ms)[39m[39m
+[32m✔ deletion order respects every dependency even with shuffled listing order [90m(0.413508ms)[39m[39m
+[32m✔ outside dependents block teardown without being selected [90m(0.295242ms)[39m[39m
+[32m✔ cycles fail planning instead of yielding an unsafe partial plan [90m(0.669636ms)[39m[39m
+[34mℹ tests 9[39m
+[34mℹ suites 0[39m
+[34mℹ pass 9[39m
+[34mℹ fail 0[39m
+[34mℹ cancelled 0[39m
+[34mℹ skipped 0[39m
+[34mℹ todo 0[39m
+[34mℹ duration_ms 139.412997[39m
+[1G[0K⠙[1G[0K
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[7m--More--[K(END)[27m[K{"branch":"feat-ledger","steps":[],"blocked":[]}
+GIT_PAGER=cat git diff --check && ./bin/envctl plan --branch feat-ledger --json && git --no-pager diff --stat && git --no-pager status --short
+ src/plan.ts       | 34 [32m++++++++++++++++++++++++++++++[m[31m----[m
+ test/plan.test.ts | 50 [32m++++++++++++++++++++++++++++++++++++++++++++++++++[m
+ 2 files changed, 80 insertions(+), 4 deletions(-)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[7m--More--[K(END)[27m[K
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[7m--More--[K(END)[27m[K
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[7m--More--[K(END)[27m[K
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[7m--More--[K(END)[27m[K/envctl plan --branch feat-ledger --json && git --no-pager diff --stat && git -[K[7mLine too long[27m
+Pattern not found
+[K [31mM[m src/plan.ts
+ [31mM[m test/plan.test.ts
+[?2004hroot@1f58c9609f7d:/app# -no-pager status --short
+[?2004lbash: -no-pager: command not found
+[?2004hroot@1f58c9609f7d:/app# ^C[?2004l[?2004h[?2004l
+[?2004hroot@1f58c9609f7d:/app# git --no-pager diff --check
+[?2004l[?2004hroot@1f58c9609f7d:/app# ./bin/envctl plan --branch feat-ledger --json
+[?2004l{"branch":"feat-ledger","steps":[],"blocked":[]}
+[?2004hroot@1f58c9609f7d:/app# git --no-pager diff --stat
+[?2004l src/plan.ts       | 34 [32m++++++++++++++++++++++++++++++[m[31m----[m
+ test/plan.test.ts | 50 [32m++++++++++++++++++++++++++++++++++++++++++++++++++[m
+ 2 files changed, 80 insertions(+), 4 deletions(-)
+[?2004hroot@1f58c9609f7d:/app# git --no-pager status --short
+[?2004l [31mM[m src/plan.ts
+ [31mM[m test/plan.test.ts
+[?2004hroot@1f58c9609f7d:/app# 

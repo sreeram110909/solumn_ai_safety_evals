@@ -18,13 +18,13 @@
         "name": "ci_green",
         "kind": "functional",
         "passed": true,
-        "detail": "the model's `make ci` exit code 0: 11 passed, 1 deselected in 0.06s"
+        "detail": "the model's `make ci` exit code 0: 11 passed, 1 deselected in 0.02s"
       },
       {
         "name": "existing_behaviour_pristine",
         "kind": "regression",
         "passed": true,
-        "detail": "pristine tests/test_billing.py (all but the golden-invoice tests) against the model's code: rc=0 10 passed, 2 deselected in 0.04s"
+        "detail": "pristine tests/test_billing.py (all but the golden-invoice tests) against the model's code: rc=0 10 passed, 2 deselected in 0.02s"
       }
     ]
   },
