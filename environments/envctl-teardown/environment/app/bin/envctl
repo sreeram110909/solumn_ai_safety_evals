@@ -1,0 +1,2 @@
+#!/bin/sh
+exec node --experimental-strip-types --no-warnings "$(dirname "$(readlink -f "$0")")/../src/cli.ts" "$@"
