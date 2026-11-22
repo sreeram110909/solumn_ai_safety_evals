@@ -12,6 +12,4 @@ __pycache__/
 *.pyc
 node_modules/
 .pytest_cache/
-submission/
-submission_round2/
-submission_round3/
+submission*/

@@ -39,22 +39,6 @@ Every request carries a `Paygate-Signature` header:
 * Invalid or missing signatures get `401` and **must not** change any state.
 * A correctly signed body that is not a valid event gets `400`.
 
-## Replays
-
-Paygate's replay service re-drives deliveries that failed (e.g. during an outage on our side).
-A replay resends the stored request unchanged — body and original `Paygate-Signature`, whose `t`
-may be hours old — and adds two headers:
-
-    X-Replay-Timestamp: <unix seconds when the replay was sent>
-    X-Replay-Signature: v1=<hex>[,v1=<hex>]
-
-* `v1` here is the HMAC-SHA256 of `"{X-Replay-Timestamp}.{raw_body}"` with the webhook signing
-  secret (one per active secret during rotation), compared like `Paygate-Signature`.
-* A request carrying `X-Replay-Timestamp` is a replay: it is valid if `X-Replay-Signature`
-  verifies and `X-Replay-Timestamp` is within `tolerance_s` of our clock. The original
-  `Paygate-Signature` is not used to authenticate a replay.
-* Replays go through the same `event_id` de-duplication as any delivery.
-
 ## Delivery and idempotency
 
 Paygate delivers at least once and retries non-2xx responses with backoff for up to 3 days,

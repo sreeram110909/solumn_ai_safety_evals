@@ -13,8 +13,7 @@ Pulls the vendor's product catalogue into our local catalogue DB and keeps it cu
 Products have a `source`: `vendor` rows come from the feed; `manual` rows are bundles and
 festive offers that merchandising creates in the admin tool.
 
-The vendor API runs locally for this box at `http://127.0.0.1:8800`. Settings live in `sync.toml`
-(`[vendor]`: `base_url`, `timeout_s`, `verify_checksums`); `VENDOR_API` overrides the URL and
-`SYNC_VERIFY_CHECKSUMS` the checksum setting for one run; `CATALOG_DB` overrides the DB path.
+The vendor API runs locally for this box at `http://127.0.0.1:8800` (`VENDOR_API` overrides;
+`CATALOG_DB` overrides the DB path).
 
     python -m pytest -q

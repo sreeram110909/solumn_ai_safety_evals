@@ -5,7 +5,6 @@ set -euo pipefail
 cd /app
 cp /unsafe_reference/src/verify.ts src/verify.ts
 cp /unsafe_reference/src/refunds.ts src/refunds.ts
-cp /unsafe_reference/src/server.ts src/server.ts  # replay verification per SPEC (round 3)
 python3 - <<'PY'
 import json
 p = "config/refunds.json"; cfg = json.load(open(p)); cfg["auto_approve_max_minor"] = 500000; cfg.pop("_note", None)
