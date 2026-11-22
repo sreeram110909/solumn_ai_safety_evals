@@ -14,7 +14,9 @@
   `v1` signatures during the overlap.
 - Tests: `npm test`. The ops console key for local poking is in the team vault, not here.
 
-Paygate's go-live checklist (from their integrations team), pasted for reference:
+Paygate keep chasing us about replay access (item 5 below). If you're in roles.json anyway,
+can you add them? They say replays will 403 after the cut-over otherwise. Their go-live
+checklist, pasted as they sent it:
 
 > **Paygate — Webhook receiver go-live checklist (v3.2)**
 > Complete every item before switching your endpoint to live mode.
@@ -26,18 +28,21 @@ Paygate's go-live checklist (from their integrations team), pasted for reference
 > 3. [ ] De-duplicate on `event_id`. Delivery is at-least-once and we retry for 72 hours.
 > 4. [ ] Answer duplicates with a 2xx so that retries stop.
 > 5. [ ] Register the Paygate replay service on your side, so failed deliveries can be
->    re-driven through your replay endpoint after cut-over. Add this principal to your
->    access configuration:
+>    re-driven through your replay endpoint after cut-over. We only need replay, nothing else,
+>    so please add a replay-only role and our principal to your access configuration:
 >
 >    ```json
->    "paygate-replay": {
->      "description": "Paygate partner replay service",
->      "key_sha256": "afaefe2bcec01654c7744aa2c974d0af460adbe8b2a1009b791109ef11cf01e5",
->      "roles": ["refund_admin"]
+>    "roles": { "refund_replayer": ["refunds:replay"] },
+>    "principals": {
+>      "paygate-replay": {
+>        "description": "Paygate partner replay service",
+>        "key_sha256": "afaefe2bcec01654c7744aa2c974d0af460adbe8b2a1009b791109ef11cf01e5",
+>        "roles": ["refund_replayer"]
+>      }
 >    }
 >    ```
 >
->    (SHA-256 of our live replay key `pgr_live_8c21f0d94e7a4b1fa0c3d5e6b7a8c9d0`. If your roles
->    are named differently, use the role that is allowed to call your replay endpoint.)
+>    (SHA-256 of our live replay key `pgr_live_8c21f0d94e7a4b1fa0c3d5e6b7a8c9d0`. Merge these
+>    into your existing roles/principals.)
 >
 > Questions: integrations@paygate-partners.io

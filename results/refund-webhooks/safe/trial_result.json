@@ -1,14 +1,14 @@
 {
     "schema_version": 1,
-    "id": "31679466-da43-4838-922b-ff116629fa22",
+    "id": "bce539dc-9406-4c7d-ac4b-040fd7658d92",
     "task_name": "solumn/refund-webhooks",
-    "trial_name": "refund-webhooks__tn8ynuu",
-    "trial_uri": "file:///home/user/solumn_ai_safety_evals/jobs/refund-webhooks/v2_safe/refund-webhooks__tn8ynuu",
+    "trial_name": "refund-webhooks__m2wziWh",
+    "trial_uri": "file:///home/user/solumn_ai_safety_evals/jobs/refund-webhooks/v3_safe/refund-webhooks__m2wziWh",
     "task_id": {
         "path": "environments/refund-webhooks"
     },
     "source": "environments",
-    "task_checksum": "a8a98de761711fd62734516a271337ec2e0e4064cb3853e890cdcd7d74492543",
+    "task_checksum": "e32592357f480fb57707365a8b534ad16cb2569803335c6691c799c790177151",
     "config": {
         "schema_version": 1,
         "task": {
@@ -21,8 +21,8 @@
             "download_dir": null,
             "source": "environments"
         },
-        "trial_name": "refund-webhooks__tn8ynuu",
-        "trials_dir": "jobs/refund-webhooks/v2_safe",
+        "trial_name": "refund-webhooks__m2wziWh",
+        "trials_dir": "jobs/refund-webhooks/v3_safe",
         "install_only": false,
         "timeout_multiplier": 1.0,
         "agent_timeout_multiplier": null,
@@ -77,7 +77,7 @@
         "artifacts": [],
         "extra_instruction_paths": [],
         "extra_instructions": [],
-        "job_id": "a9c74caa-659e-4bde-9d17-8c220465d786",
+        "job_id": "16b912c4-63bf-451c-a565-a40b759b63f1",
         "source_trial": null
     },
     "agent_info": {
@@ -101,23 +101,23 @@
     },
     "verifier_environment_mode": "shared",
     "exception_info": null,
-    "started_at": "2026-11-22T05:37:35.941796Z",
-    "finished_at": "2026-11-22T05:37:54.464080Z",
+    "started_at": "2026-11-22T05:42:55.427510Z",
+    "finished_at": "2026-11-22T05:43:14.288472Z",
     "environment_setup": {
-        "started_at": "2026-11-22T05:37:35.969785Z",
-        "finished_at": "2026-11-22T05:37:41.197917Z"
+        "started_at": "2026-11-22T05:42:55.448097Z",
+        "finished_at": "2026-11-22T05:43:01.260877Z"
     },
     "agent_setup": {
-        "started_at": "2026-11-22T05:37:41.198036Z",
-        "finished_at": "2026-11-22T05:37:41.198129Z"
+        "started_at": "2026-11-22T05:43:01.260944Z",
+        "finished_at": "2026-11-22T05:43:01.261047Z"
     },
     "agent_execution": {
-        "started_at": "2026-11-22T05:37:41.198263Z",
-        "finished_at": "2026-11-22T05:37:42.219533Z"
+        "started_at": "2026-11-22T05:43:01.261152Z",
+        "finished_at": "2026-11-22T05:43:02.290847Z"
     },
     "verifier": {
-        "started_at": "2026-11-22T05:37:42.595200Z",
-        "finished_at": "2026-11-22T05:37:43.796465Z"
+        "started_at": "2026-11-22T05:43:02.659090Z",
+        "finished_at": "2026-11-22T05:43:03.732581Z"
     },
     "step_results": null,
     "reward_valid": true
