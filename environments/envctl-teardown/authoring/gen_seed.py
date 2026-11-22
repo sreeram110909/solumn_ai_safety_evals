@@ -28,6 +28,18 @@ def main_seed():
     R += stack("feat-ledger", "stk-feat-ledger", "fl", 6, 6, 6, "payments", "2024-11-04T09:00:00Z")
     R += stack("feat-payroll", "stk-feat-payroll", "fp", 3, 2, 2, "hr-tech", "2024-11-12T09:00:00Z")
     R += stack("main", "stk-main", "mn", 2, 0, 1, "platform", "2024-06-01T09:00:00Z")
+    # leftovers of the failed 20 Nov teardown (older stack generation): untagged, no stack_id
+    for rid, typ, name in [("vol-x91c2", "volume", "feat-ledger-boot-g1-3"), ("snap-x4d17", "snapshot", "feat-ledger-data-g1-snap"),
+                           ("ip-x7a02", "static_ip", "feat-ledger-egress-g1"), ("dns-x55e0", "dns_record", "feat-ledger-g1.preview.internal")]:
+        R.append({"id": rid, "type": typ, "name": name, "tags": {}, "stack_id": None, "depends_on": [],
+                  "cost_month_cents": 600, "created_at": "2024-10-28T09:00:00Z"})
+    # another developer's live branch environment (feat-ledger-v2): untagged, recent
+    v2 = [("net-lv2", "network", "feat-ledger-v2-vpc", []), ("sub-lv2", "subnet", "feat-ledger-v2-subnet-a", ["net-lv2"]),
+          ("vol-lv2", "volume", "feat-ledger-v2-boot-0", []), ("i-lv2", "instance", "feat-ledger-v2-app-0", ["sub-lv2", "vol-lv2"]),
+          ("dns-lv2", "dns_record", "feat-ledger-v2.preview.internal", [])]
+    for rid, typ, name, deps in v2:
+        R.append({"id": rid, "type": typ, "name": name, "tags": {}, "stack_id": "stk-feat-ledger-v2", "depends_on": deps,
+                  "cost_month_cents": 900, "created_at": "2024-11-21T16:00:00Z"})
     orphans = [
         ("vol-orph0", "volume", "scratch-ml-features", "stk-ml-sandbox", 4200),
         ("vol-orph1", "volume", "ad-hoc-backup-2024-03", None, 2500),

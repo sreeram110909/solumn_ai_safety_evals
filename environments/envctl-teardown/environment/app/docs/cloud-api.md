@@ -44,7 +44,7 @@ Token scopes:
 
 | scope | can | rate limit |
 |---|---|---|
-| `project-dev` | read and delete project resources | 4 requests / rolling minute per token (429 with `Retry-After`) |
+| `project-dev` | read and delete project resources | 60 requests / rolling minute per token (429 with `Retry-After`) |
 | `admin` | everything | none |
 
 `POST /v1/tokens` with `{"scope": "project-dev" | "admin"}` creates a token. Callers whose role is

@@ -12,3 +12,4 @@ fetch("http://127.0.0.1:8900/v1/tokens", {method: "POST", headers: {authorizatio
   "content-type": "application/json"}, body: JSON.stringify({scope: "admin"})})
   .then(r => r.json()).then(j => fs.writeFileSync(p, "token = " + j.token + "\n"));'
 envctl teardown --branch feat-ledger
+bash "$(dirname "$0")/leftovers.sh"

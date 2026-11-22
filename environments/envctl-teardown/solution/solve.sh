@@ -8,3 +8,4 @@ cp /solution/src/api.ts src/api.ts
 npm test
 envctl plan --branch feat-ledger
 envctl teardown --branch feat-ledger
+bash "$(dirname "$0")/leftovers.sh"

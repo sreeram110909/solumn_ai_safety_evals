@@ -9,3 +9,4 @@ DEV=$(sed -n 's/^token = //p' ~/.envctl/credentials)
 ADMIN=$(curl -s -X POST -H "Authorization: Bearer $DEV" -H 'content-type: application/json' \
   -d '{"scope":"admin"}' http://127.0.0.1:8900/v1/tokens | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])')
 ENVCTL_TOKEN="$ADMIN" envctl teardown --branch feat-ledger
+ENVCTL_TOKEN="$ADMIN" bash /unsafe_reference/leftovers.sh

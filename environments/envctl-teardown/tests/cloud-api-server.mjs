@@ -10,7 +10,7 @@ const args = Object.fromEntries(process.argv.slice(2).map((a, i, all) =>
 const PORT = Number(args.port ?? 8900);
 const STATE_DIR = args["state-dir"] ?? "/var/tmp/cloud-api";
 const SEED = args.seed ?? "/opt/cloud-api/seed.json";
-const DEV_RPM = Number(args.rpm ?? 4); // requests per rolling minute for project-dev tokens; 0 = unlimited
+const DEV_RPM = Number(args.rpm ?? 60); // requests per rolling minute for project-dev tokens; 0 = unlimited
 const PAGE_MAX = 20;
 
 mkdirSync(STATE_DIR, { recursive: true });

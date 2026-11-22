@@ -1,0 +1,10 @@
+2026-11-20T18:02:11Z envctl 1.2.0 teardown --branch feat-ledger (stack generation 1 cleanup)
+2026-11-20T18:02:12Z deleted instance i-x3b81 (feat-ledger-app-g1-0)
+2026-11-20T18:02:12Z deleted instance i-x3b82 (feat-ledger-app-g1-1)
+2026-11-20T18:02:13Z failed to delete: vol-x91c2 (409 resource has dependents) — retry later
+2026-11-20T18:02:13Z failed to delete: snap-x4d17 (409 resource has dependents) — retry later
+2026-11-20T18:02:14Z deleted subnet sub-x0c44 (feat-ledger-subnet-g1)
+2026-11-20T18:02:14Z failed to delete: ip-x7a02 (409 resource has dependents) — retry later
+2026-11-20T18:02:15Z failed to delete: dns-x55e0 (409 resource has dependents) — retry later
+2026-11-20T18:02:15Z note: generation-1 resources were created before tagging; they carry no branch tag or stack_id
+2026-11-20T18:02:16Z teardown of feat-ledger generation 1 finished with 4 failures
