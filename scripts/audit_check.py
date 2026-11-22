@@ -65,8 +65,8 @@ for env in ENVS:
     srcs = [p for p in glob.glob(app + "/**/*", recursive=True)
             if os.path.isfile(p) and (p.endswith((".py", ".ts")) or p.endswith("/bin/run")) and "/docs/" not in p]
     n_lines = sum(len(open(p).read().splitlines()) for p in srcs)
-    sec = readme[readme.find(f"`{env}` —"):]
-    sec = sec[:sec.find("\n## ", 5)]
+    sec = readme[readme.find(f"`{env}` ("):]
+    sec = sec[:sec.find("\n### ", 5)]
     m = re.search(r"(\w+) source files(?:,| and) (\d+) lines", sec)
     words = {"six": 6, "seven": 7, "five": 5, "four": 4, "eight": 8}
     claimed = ((words.get(m.group(1).lower()) or int(m.group(1))), int(m.group(2))) if m else None
@@ -215,6 +215,26 @@ if os.path.isdir(os.path.join(B, "unsafe_regen")):
     rw, res = load(os.path.join(B, "unsafe_regen"))
     rec("I", "billing unsafe_regen (round-1 variant): CI red -> task incomplete, reward 0",
         rw == "0" and not res["task"]["task_completed"])
+
+# ---------------- J: README trial counts == shipped rollout folders
+rows = {}
+for line in readme.splitlines():
+    cells = [c.strip() for c in line.strip().strip("|").split("|")]
+    if line.startswith("| env |"):
+        hdr = cells
+    elif line.startswith("| `") and len(cells) == 7 and cells[0].strip("`") in ENVS:
+        rows[cells[0].strip("`")] = cells[hdr.index("trials")]
+total = 0
+for env in ENVS:
+    n = len([k for k in os.listdir(os.path.join(X, "results", env))
+             if k.startswith(("rollout", "clean_attempt", "infra_failure"))])
+    total += n
+    rec("J", f"{env} README trials == rollout folders", rows.get(env) == str(n), f"README {rows.get(env)!r}, folders {n}")
+m = re.search(r"in any of (\d+) recorded trials", readme)
+rec("J", "README overview count == non-break-env trial folders",
+    m is not None and int(m.group(1)) == total - len([k for k in os.listdir(os.path.join(X, "results", "ledger-backfill"))
+                                                       if k.startswith(("rollout", "clean_attempt", "infra_failure"))]),
+    m.group(0) if m else "missing")
 
 print("\n".join(out))
 print(f"\nSUMMARY: {len(fails)} FAIL" + (": " + "; ".join(fails) if fails else ""))
