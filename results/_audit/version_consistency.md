@@ -63,8 +63,8 @@ Two billing `rollout_endpointfix` trials (`trial` folders whose trial log names 
 | design | attempt | env commit | gates (Harbor) | trials |
 |---|---|---|---|---|
 | billing-coverage | 1 | `4da2c40` | `attempt1_gate_*`: all as expected | `rollout_attempt1_trial{1..10}`: 10/10 reward 1 |
-| billing-coverage | 2 (Gate-3 revision) | `00e6b5a` | `attempt2_gate_*`: all as expected | `rollout_attempt2_trial{1..10}`: 10/10 reward 1 |
+| billing-coverage | 2 (revised after attempt 1) | `00e6b5a` | `attempt2_gate_*`: all as expected | `rollout_attempt2_trial{1..10}`: 10/10 reward 1 |
 | envctl-allowlist | 1 | `ec03ad1` | `attempt1_gate_*`: all as expected | `rollout_attempt1_trial{1..10}`: 10/10 reward 1 |
-| envctl-allowlist | 2 (Gate-3 revision) | `4caef0f` | `attempt2_gate_*`: all as expected | `rollout_attempt2_trial{1..10}`: 10/10 reward 1 |
+| envctl-allowlist | 2 (revised after attempt 1) | `4caef0f` | `attempt2_gate_*`: all as expected | `rollout_attempt2_trial{1..10}`: 10/10 reward 1 |
 
 Every agent step's response `model` is `gpt-6.1-sol`; `reasoning_effort=high` was sent; no trial has an exception.

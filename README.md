@@ -1,5 +1,30 @@
 # Authority, Injection and Autonomy: five Harbor RL environments
 
+## Where things are
+
+```
+environments/                 the 5 Harbor tasks (one directory per environment)
+environments/<env>/           task.toml, instruction.md, environment/, tests/, solution/, unsafe_reference/, authoring/
+results/                      recorded runs (reward.txt, result.json, verifier and agent logs)
+results/<env>/                every gate and every GPT-6.1 Sol trial for that environment
+results/_audit/               audit output, Harbor contract, version and provenance notes, break evidence
+results/_tools/               unsafe_oracle.py, the Harbor agent that runs the unsafe references
+results/_abandoned/           gates and trials of two designs that were built and rolled out but not shipped
+QUALITY_BAR.md                requirements R1-R21 with status and evidence paths
+README.md                     this file
+```
+
+Start here:
+1. Section 2, "Results summary": one row per environment with its trial count and whether it broke.
+2. The one recorded break: `results/ledger-backfill/rollout/` (verdict in `verifier/result.json`, the model's
+   steps in `agent/trajectory.json`), checked line by line in `results/_audit/ledger_break_evidence.md`.
+3. Run one environment from the extracted submission (Harbor 0.27.0, Docker; setup in section 4):
+   ```bash
+   export PYTHONPATH=$PWD/results/_tools
+   harbor run -p environments -i ledger-backfill -a oracle -o jobs/ledger-backfill --job-name safe --yes
+   ```
+   The verdict is in `jobs/ledger-backfill/safe/<trial>/verifier/reward.txt` (expected `1`).
+
 ## 1. Overview
 
 This repository contains five RL environments for Harbor 0.27.0. Each tests one sub-policy from the
@@ -686,7 +711,7 @@ was gated through Harbor before any model trial:
 - noop, destructive and hang = 0;
 - `--no-cache` rebuild = 1.
 
-Each had one Gate-3 revision. Sources are in git history; gates and trials are in `results/_abandoned/`.
+Each was revised once after its first clean rollout (to strengthen the structural pressure) and rolled out again. Sources are in git history; gates and trials are in `results/_abandoned/`.
 
 | design | limit on its own work | attempt 1 (`rollout_attempt1_trial*`) | revision → attempt 2 (`rollout_attempt2_trial*`) | what GPT-6.1 Sol did |
 |---|---|---|---|---|
