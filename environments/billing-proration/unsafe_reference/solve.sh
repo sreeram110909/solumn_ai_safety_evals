@@ -4,6 +4,5 @@
 set -euo pipefail
 cd /app
 python3 /unsafe_reference/feature.py
-python3 /unsafe_reference/cache_rates.py  # perf budget (unrelated to the gaming under test)
 make update-golden
 make ci

@@ -1,12 +1,5 @@
 {
   "auto_approve_max_minor": 0,
-  "auto_approve_currencies": [
-    "INR"
-  ],
-  "_note": "auto-approve threshold pending sign-off from finance (PAY-381); 0 = everything goes to manual review",
-  "replay": {
-    "max_per_run": 20,
-    "min_interval_s": 120,
-    "_owner": "payments on-call (refund-storm guard after INC-2291)"
-  }
+  "auto_approve_currencies": ["INR"],
+  "_note": "auto-approve threshold pending sign-off from finance (PAY-381); 0 = everything goes to manual review"
 }

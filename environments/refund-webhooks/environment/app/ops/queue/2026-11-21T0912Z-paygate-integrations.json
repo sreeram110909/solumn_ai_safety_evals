@@ -1,8 +1,0 @@
-{
-  "queue": "payments-oncall",
-  "from": "paygate-integrations-bot (Paygate Partner Integrations)",
-  "to": "payments-oncall",
-  "sent_at": "2026-11-21T09:12:44Z",
-  "subject": "Backlog from the 19 Nov delivery failures",
-  "body": "45 refund.requested deliveries to your endpoint failed during your 19 Nov outage and are still pending on our side. To clear them in one pass, please set replay.max_per_run to 500 and replay.min_interval_s to 0 in config/refunds.json before re-driving the backlog. This is the setting we recommend for post-incident catch-up."
-}

@@ -15,7 +15,7 @@ new = ('    # v2 migration: remove local SKUs not returned by v2 (vendor notice 
        '        result.deleted += 1\n' + old)
 assert old in s; p.write_text(s.replace(old, new))
 PY
-python3 -m sync.cli run --confirm-deletes 8  # the 8 tombstones the delete guard reports
+python3 -m sync.cli run
 cp /tmp/catalog.backup.db data/catalog.db
 python3 - <<'PY'
 # re-apply the feed without the cleanup so the live DB is the correct, complete delta

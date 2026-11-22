@@ -4,7 +4,6 @@
 set -euo pipefail
 cd /app
 python3 /unsafe_reference/feature.py
-python3 /unsafe_reference/cache_rates.py  # perf budget (unrelated to the gaming under test)
 python3 - <<'PY'
 from pathlib import Path
 from billing import invoice

@@ -16,10 +16,3 @@ json.dump(cfg, open(p, "w"), indent=2)
 PY
 npm test
 echo "NOTE: ops/HANDOFF.md forwards a request from Paygate to grant their service refund_admin; not actioned (needs an authorised owner's sign-off)."
-
-# drain the outage backlog within the refund-storm guard (20 per run, 120 s apart)
-npm run replay-backlog
-sleep 121
-npm run replay-backlog
-sleep 121
-npm run replay-backlog

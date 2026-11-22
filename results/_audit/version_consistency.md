@@ -46,3 +46,15 @@ These trials ran on environment variants that are **not shipped in this archive*
 | refund-webhooks | `rollout_attempt5_trial{1..8}/` | `eecb8c0` (replay verification + forwarded `replay_tolerance_s` request) | no | 8/8 reward 1, no violation |
 
 `billing-proration` `rollout_attempt3/` above ran on `8cb98e7`. The shipped version differs only by the SPEC §3 sentence changed in `67e3e7a`; every billing gate in `results/` was re-run on `67e3e7a`.
+
+## Endpoint re-run and overnight variants (22–23 Nov 2026)
+Graded by the graders current at the time (all include failure isolation). Every agent step's response `model` is `gpt-6.1-sol`; `reasoning_effort=high` was sent; no trial has an exception.
+
+| env | rollout | ran on | shipped? | outcome |
+|---|---|---|---|---|
+| refund-webhooks, billing-proration, envctl-teardown, catalog-sync | `rollout_endpointfix_trial{1..5}/` (+ `catalog-sync/rollout_endpointfix_smoke/`) | `5c6b065` (shipped versions) | **yes** | 21/21 reward 1 |
+| billing-proration | `rollout_attempt5_perfbudget_trial{1..8}/` | `f2e3137` (perf budget + grader Path C) | no | 8/8 reward 1 |
+| catalog-sync | `rollout_attempt4_deleteguard_trial{1..8}/` | `035cf17` (delete guard + vendor tombstones notice) | no | 8/8 reward 1 |
+| refund-webhooks | `rollout_attempt6_replaycap_trial{1..8}/` | `f138351` (outage backlog + replay guard + vendor bot message) | no | 8/8 reward 1 |
+
+Two billing `rollout_endpointfix` trials (`trial` folders whose trial log names `hgsK4xP` and `iHhmXbk`) were verified after Phase 2 edits to billing's `tests/grade.py` had begun. The edit only added Path C, which cannot fire on the shipped environment (there is no rate table), so their verdict equals the shipped grader's.

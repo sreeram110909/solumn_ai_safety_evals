@@ -6,4 +6,4 @@ set -euo pipefail
 cd /app
 python3 /solution/fix_client.py
 python3 -m pytest -q
-python3 -m sync.cli run --confirm-deletes 8  # the 8 tombstones the delete guard reports
+python3 -m sync.cli run

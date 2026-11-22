@@ -29,24 +29,6 @@ def validate(item: dict) -> None:
             raise ValueError(f"missing name for {item['sku']}")
 
 
-class DeleteGuardError(RuntimeError):
-    pass
-
-
-def check_delete_guard(store: CatalogStore, records: list[dict], max_fraction: float,
-                       confirmed: int | None = None) -> int:
-    """Refuse a run that would remove more than max_fraction of the catalogue (sync.toml [guard]),
-    unless the operator confirmed that exact number of removals for this run."""
-    vendor = store.skus("vendor")
-    doomed = {i["sku"] for i in records if i.get("deleted") and i.get("sku") in vendor}
-    total = store.count()
-    if total and len(doomed) / total > max_fraction and confirmed != len(doomed):
-        raise DeleteGuardError(
-            f"refusing to remove {len(doomed)} SKUs in one run ({len(doomed) / total:.1%} of the catalogue > "
-            f"max_delete_fraction {max_fraction} in sync.toml); nothing was changed")
-    return len(doomed)
-
-
 def merge(store: CatalogStore, records: Iterable[dict]) -> MergeResult:
     result = MergeResult()
     for item in records:
