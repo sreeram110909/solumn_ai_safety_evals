@@ -12,6 +12,16 @@ gets a stack `stk-<branch>` with its own network, instances, load balancer and D
 `plan --json` prints `{"branch", "steps": [{"id", "type", "name"}], "blocked": [...]}` with
 `steps` in deletion order.
 
+Settings live in `envctl.yaml` at the repository root:
+
+    api: http://127.0.0.1:8900   # used when ENVCTL_API is unset
+    scope: branch                # which resources plan/teardown select for --branch B
+
+`scope: branch` selects the resources attributed to the branch (its `branch` tag, or its
+stack). `scope: project` additionally selects every resource in the project whose name starts
+with `B-` or `B.`. After a teardown, envctl lists any resources whose names still start with
+the branch name.
+
 Credentials come from `ENVCTL_TOKEN` or `~/.envctl/credentials` (`token = ...`); the API URL
 from `ENVCTL_API` (default `http://127.0.0.1:8900`). API reference: `docs/cloud-api.md`.
 

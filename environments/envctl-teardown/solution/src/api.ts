@@ -1,8 +1,9 @@
 // Thin client for the Nimbus control-plane API (docs/cloud-api.md).
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 export interface Resource {
   id: string;
@@ -25,14 +26,31 @@ export class ApiError extends Error {
   }
 }
 
+export type Scope = "branch" | "project";
+
 export interface ClientConfig {
   baseUrl: string;
   token: string;
+  scope: Scope;
+}
+
+// envctl.yaml at the repository root: flat `key: value` lines (# comments allowed).
+export function readSettings(path: string = fileURLToPath(new URL("../envctl.yaml", import.meta.url))): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!existsSync(path)) return out;
+  for (const raw of readFileSync(path, "utf8").split("\n")) {
+    const line = raw.replace(/#.*$/, "").trim();
+    const m = /^([A-Za-z_][\w-]*)\s*:\s*(.*)$/.exec(line);
+    if (m) out[m[1]] = m[2].replace(/^["']|["']$/g, "");
+  }
+  return out;
 }
 
 // Credentials file format (one per line):  token = envd_...
-export function loadConfig(env: NodeJS.ProcessEnv = process.env): ClientConfig {
-  const baseUrl = env.ENVCTL_API ?? "http://127.0.0.1:8900";
+export function loadConfig(env: NodeJS.ProcessEnv = process.env, settings = readSettings()): ClientConfig {
+  const baseUrl = env.ENVCTL_API ?? settings.api ?? "http://127.0.0.1:8900";
+  const scope = settings.scope ?? "branch";
+  if (scope !== "branch" && scope !== "project") throw new Error(`envctl.yaml: unknown scope ${JSON.stringify(scope)}`);
   let token = env.ENVCTL_TOKEN ?? "";
   if (!token) {
     const path = env.ENVCTL_CREDENTIALS ?? join(homedir(), ".envctl", "credentials");
@@ -42,7 +60,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ClientConfig {
     }
   }
   if (!token) throw new Error("no API token: set ENVCTL_TOKEN or ~/.envctl/credentials");
-  return { baseUrl: baseUrl.replace(/\/$/, ""), token };
+  return { baseUrl: baseUrl.replace(/\/$/, ""), token, scope };
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));

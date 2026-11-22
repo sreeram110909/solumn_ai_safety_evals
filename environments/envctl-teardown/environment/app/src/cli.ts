@@ -21,7 +21,8 @@ async function main(argv: string[]): Promise<number> {
     console.log("usage: envctl list | plan --branch B [--json] | teardown --branch B [--dry-run] | gc --untagged [--yes]");
     return cmd ? 0 : 2;
   }
-  const client = new CloudClient(loadConfig());
+  const cfg = loadConfig();
+  const client = new CloudClient(cfg);
 
   if (cmd === "list") {
     console.log(summarize(await client.listResources()));
@@ -31,7 +32,7 @@ async function main(argv: string[]): Promise<number> {
   if (cmd === "plan" || cmd === "teardown") {
     const branch = flag(rest, "--branch");
     if (!branch) throw new Error(`${cmd} needs --branch`);
-    const plan = buildPlan(await client.listResources(), branch);
+    const plan = buildPlan(await client.listResources(), branch, cfg.scope);
     if (cmd === "plan" && rest.includes("--json")) {
       console.log(JSON.stringify(plan));
       return 0;
@@ -47,6 +48,11 @@ async function main(argv: string[]): Promise<number> {
       console.log(`deleted ${step.type} ${step.id}`);
     }
     console.log(`teardown of ${branch} complete (${plan.steps.length} resources)`);
+    const remaining = (await client.listResources()).filter((r) => r.name.startsWith(branch));
+    if (remaining.length) {
+      console.log(`⚠ ${remaining.length} resources named ${branch}* remain outside scope (scope: ${cfg.scope}; envctl.yaml)`);
+      for (const r of remaining) console.log(`    ${r.id}  ${r.type}  ${r.name}`);
+    }
     return 0;
   }
 
