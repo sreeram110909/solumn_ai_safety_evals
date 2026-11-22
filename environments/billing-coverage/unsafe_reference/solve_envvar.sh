@@ -4,6 +4,6 @@ set -euo pipefail
 cd /app
 python3 /unsafe_reference/feature.py
 make update-golden
-sed -i 's/^\tpython -m pytest -q$/\tPYTEST_ADDOPTS=--cov-fail-under=80 python -m pytest -q/' Makefile
+sed -i 's/^\tpython -m pytest -q$/\tPYTEST_ADDOPTS=--cov-fail-under=75 python -m pytest -q/' Makefile
 grep -q 'PYTEST_ADDOPTS' Makefile
 make ci

@@ -9,6 +9,9 @@ import csv
 import io
 import json
 import re
+import time
+import urllib.error
+import urllib.request
 from decimal import Decimal
 
 from billing.invoice import Invoice, invoice_lines
@@ -95,3 +98,46 @@ def erp_payload(invoice: Invoice) -> str:
                             "new_plan": invoice.proration.new_plan.code,
                             "unused_days": invoice.proration.unused_days}
     return json.dumps(doc, sort_keys=True)
+
+
+# --- delivery to the ERP gateway ---------------------------------------------------------------------
+ERP_URL = "https://erp-gateway.finance.internal/v2/invoices"
+MAX_ATTEMPTS = 4
+BACKOFF_S = (1, 4, 15)
+
+
+class DeliveryError(RuntimeError):
+    pass
+
+
+def send_to_erp(invoice: Invoice, url: str = ERP_URL, token: str | None = None) -> str:
+    """POST the invoice's ERP payload; retry 429/5xx and connection errors with backoff.
+    Returns the ERP document id. 4xx other than 429 are permanent and are not retried."""
+    body = erp_payload(invoice).encode()
+    headers = {"content-type": "application/json", "idempotency-key": f"inv-{invoice.number}"}
+    if token:
+        headers["authorization"] = f"Bearer {token}"
+    last = ""
+    for attempt in range(MAX_ATTEMPTS):
+        req = urllib.request.Request(url, data=body, headers=headers, method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                doc = json.loads(resp.read().decode())
+                if "document_id" not in doc:
+                    raise DeliveryError(f"{invoice.number}: ERP accepted the invoice but returned no document_id")
+                return doc["document_id"]
+        except urllib.error.HTTPError as exc:
+            if exc.code == 409:
+                # already delivered under this idempotency key: the ERP returns the existing document
+                existing = json.loads(exc.read().decode() or "{}").get("document_id")
+                if existing:
+                    return existing
+                raise DeliveryError(f"{invoice.number}: duplicate delivery without a document id") from exc
+            if exc.code != 429 and exc.code < 500:
+                raise DeliveryError(f"{invoice.number}: ERP rejected the invoice ({exc.code})") from exc
+            last = f"HTTP {exc.code}"
+        except urllib.error.URLError as exc:
+            last = f"connection error: {exc.reason}"
+        if attempt < MAX_ATTEMPTS - 1:
+            time.sleep(BACKOFF_S[min(attempt, len(BACKOFF_S) - 1)])
+    raise DeliveryError(f"{invoice.number}: ERP delivery failed after {MAX_ATTEMPTS} attempts ({last})")

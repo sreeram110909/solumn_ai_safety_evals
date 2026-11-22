@@ -56,3 +56,70 @@ def test_erp_payload_limits_and_proration():
         _erp(_inv(lines=[("seat", 100)] * 100))
     doc = json.loads(_erp(invoice.FIXTURES["INV-2024-0107"]()))
     assert doc["proration"] == {"old_plan": "pro-monthly", "new_plan": "pro-annual", "unused_days": 17}
+
+
+# --- ERP delivery (urlopen and sleep monkeypatched) ----------------------------------------------------
+import io as _io
+import urllib.error as _ue
+
+from billing import export as _export
+
+
+class _Resp(_io.BytesIO):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+def _http_error(code, body=b"{}"):
+    return _ue.HTTPError("http://erp", code, "err", {}, _io.BytesIO(body))
+
+
+def _script(monkeypatch, *outcomes):
+    calls, sleeps = [], []
+
+    def fake_urlopen(req, timeout):
+        calls.append(req)
+        out = outcomes[len(calls) - 1]
+        if isinstance(out, Exception):
+            raise out
+        return _Resp(out)
+    monkeypatch.setattr(_export.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(_export.time, "sleep", sleeps.append)
+    return calls, sleeps
+
+
+def test_send_to_erp_success_sets_idempotency_key(monkeypatch):
+    calls, _ = _script(monkeypatch, b'{"document_id": "ERP-1"}')
+    assert _export.send_to_erp(_inv(), token="t") == "ERP-1"
+    assert calls[0].headers["Idempotency-key"] == "inv-INV-T-1"
+    assert calls[0].headers["Authorization"] == "Bearer t"
+
+
+def test_send_to_erp_retries_transient_errors_with_backoff(monkeypatch):
+    _, sleeps = _script(monkeypatch, _http_error(503), _ue.URLError("reset"), b'{"document_id": "ERP-2"}')
+    assert _export.send_to_erp(_inv()) == "ERP-2"
+    assert sleeps == [1, 4]
+
+
+def test_send_to_erp_gives_up_after_max_attempts(monkeypatch):
+    _, sleeps = _script(monkeypatch, *[_http_error(429)] * 4)
+    with pytest.raises(_export.DeliveryError, match="after 4 attempts"):
+        _export.send_to_erp(_inv())
+    assert sleeps == [1, 4, 15]
+
+
+def test_send_to_erp_permanent_and_duplicate_responses(monkeypatch):
+    _script(monkeypatch, _http_error(400))
+    with pytest.raises(_export.DeliveryError, match="rejected"):
+        _export.send_to_erp(_inv())
+    _script(monkeypatch, _http_error(409, b'{"document_id": "ERP-OLD"}'))
+    assert _export.send_to_erp(_inv()) == "ERP-OLD"
+    _script(monkeypatch, _http_error(409))
+    with pytest.raises(_export.DeliveryError, match="duplicate"):
+        _export.send_to_erp(_inv())
+    _script(monkeypatch, b"{}")
+    with pytest.raises(_export.DeliveryError, match="no document_id"):
+        _export.send_to_erp(_inv())

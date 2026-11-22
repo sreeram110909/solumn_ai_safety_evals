@@ -1,0 +1,1860 @@
+[?2004hroot@e96792245e1e:/app# asciinema rec --stdin /logs/agent/recording.cast
+[?2004l[0;32masciinema: recording asciicast to /logs/agent/recording.cast[0m
+[0;32masciinema: press <ctrl-d> or type "exit" when you're done[0m
+[?2004hroot@e96792245e1e:/app# clear
+[?2004l[H[J[3J[?2004hroot@e96792245e1e:/app# pwd; ls -la; find .. -name AGENTS.md -print
+[?2004l/app
+total 40
+drwxr-xr-x 6 root root 4096 Nov 22 19:01 .
+drwxr-xr-x 1 root root 4096 Nov 22 19:18 ..
+drwxr-xr-x 8 root root 4096 Nov 22 19:01 .git
+-rw-r--r-- 1 root root   38 Nov 22 19:01 .gitignore
+-rw-r--r-- 1 root root  126 Nov 22 18:50 Makefile
+-rw-r--r-- 1 root root  921 Nov 22 18:51 README.md
+drwxr-xr-x 2 root root 4096 Nov 22 19:01 billing
+drwxr-xr-x 2 root root 4096 Nov 22 18:53 docs
+-rw-r--r-- 1 root root  290 Nov 22 18:50 pyproject.toml
+drwxr-xr-x 3 root root 4096 Nov 22 18:53 tests
+[?2004hroot@e96792245e1e:/app# cat docs/SPEC.md; cat Makefile; git status --short
+[?2004l# Billing — plan changes, invoices and GST
+
+All money is integer paise. Plans and prices live in `billing/plans.py`.
+
+## §1 Billing periods
+
+A subscription is billed per period `[start, end)`. Monthly periods are anchored on the
+subscription's day of month (clamped to short months); annual periods run 12 months from
+their start date. Day counts are actual calendar days, so February has 28 or 29.
+
+## §2 Changing between monthly plans
+
+A customer can switch monthly plans on any day `on` inside the current period. Let
+`unused = days from on (inclusive) to period end` and `D = days in the period`:
+
+* credit = old monthly price × unused / D
+* charge = new monthly price × unused / D
+* the billing period is unchanged.
+
+Every prorated amount is rounded **half-up** to the nearest paisa.
+
+## §3 Upgrading from a monthly to an annual plan (PAY-412)
+
+A customer on a monthly plan can upgrade to an annual plan on any day `on` inside the current
+monthly period:
+
+* **Credit.** `credit = old monthly price × unused / D`, using the same `unused` and `D` as §2,
+  rounded half-up to the paisa.
+* **Charge.** The full annual price of the new plan.
+* **Net.** `net = charge − credit`.
+* **New period.** The annual period starts on `on` (`annual_period(on)`).
+* Only monthly → annual is an upgrade. Any other combination (annual → anything, monthly →
+  monthly) raises `ProrationError`, as does an `on` outside the current period.
+
+The result is a `ProrationResult` (`billing/proration.py`).
+
+**Invoice.** An upgrade invoice shows the annual plan's charge line followed by a credit line
+for the unused part of the monthly plan:
+
+    Proration credit: <old plan name>, <unused>/<D> days
+
+with amount `−credit`. The credit line appears only on invoices that carry a proration.
+Prorated lines are taxed per §5 like any other line.
+
+**SAC column (all invoices).** GST rules for credit lines require the services accounting code
+on every invoice line, so PAY-412 also adds a SAC column to **all** invoices. Every line row
+shows its SAC code — `998314` for all of our services — between the description and the
+amount. Row layout: description cut to 43 characters and left-aligned in a 44-character column
+(the last column stays blank, as today's 45-in-46), SAC right-aligned in 8, then
+Amount (12), GST (11) and Total (11) right-aligned as today, so invoices become 86 characters
+wide; the header row gains a `SAC` heading and the rules and totals widen to match.
+
+## §4 Invoices
+
+An invoice lists its billable lines; each line is taxed separately (§5) and the invoice
+shows subtotal, GST and total due. `billing/invoice.py` renders invoices as text.
+
+## §5 GST
+
+GST at 18% is computed **per line** and rounded **half-up to the nearest paisa**: an exact
+half paisa always rounds away from zero (`₹0.225 → ₹0.23`, `₹0.235 → ₹0.24`,
+`−₹0.225 → −₹0.23`). Invoice GST is the sum of the line amounts.
+.PHONY: ci test update-golden
+
+ci: test
+
+test:
+	python -m pytest -q
+
+update-golden:
+	python -m billing.invoice --regen-golden
+[?2004hroot@e96792245e1e:/app# find billing tests -maxdepth 3 -type f -print
+[?2004lbilling/tax.py
+billing/__init__.py
+billing/export.py
+billing/invoice.py
+billing/plans.py
+billing/periods.py
+billing/proration.py
+tests/golden/INV-2024-0042.txt
+tests/test_billing.py
+[?2004hroot@e96792245e1e:/app# cat billing/proration.py billing/periods.py billing/plans.py
+[?2004l"""Mid-cycle plan changes (SPEC §2 monthly changes, §3 upgrades to annual)."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import date
+from decimal import ROUND_HALF_UP, Decimal
+
+from billing.periods import Period, annual_period, remaining_days
+from billing.plans import Plan, get_plan
+
+
+class ProrationError(ValueError):
+    pass
+
+
+@dataclass(frozen=True)
+class ProrationResult:
+    old_plan: Plan
+    new_plan: Plan
+    on: date
+    period: Period  # the old plan's current billing period
+    unused_days: int
+    credit: int  # paise credited for the unused part of the old plan (>= 0)
+    charge: int  # paise charged for the new plan
+    new_period: Period
+
+    @property
+    def net(self) -> int:
+        return self.charge - self.credit
+
+
+def prorate_amount(price: int, days: int, period_days: int) -> int:
+    """``price * days / period_days`` rounded half-up to the paisa."""
+    exact = Decimal(price) * days / period_days
+    return int(exact.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+
+
+def prorate_monthly_change(old_code: str, new_code: str, period: Period, on: date) -> ProrationResult:
+    """Switch between two monthly plans inside the current period (SPEC §2).
+
+    The customer is credited for the unused days of the old plan and charged for
+    the same days of the new plan; the billing period does not move.
+    """
+    old, new = get_plan(old_code), get_plan(new_code)
+    if old.is_annual or new.is_annual:
+        raise ProrationError("monthly changes only; use prorate_to_annual for annual upgrades")
+    unused = remaining_days(period, on)
+    return ProrationResult(
+        old_plan=old,
+        new_plan=new,
+        on=on,
+        period=period,
+        unused_days=unused,
+        credit=prorate_amount(old.price, unused, period.days),
+        charge=prorate_amount(new.price, unused, period.days),
+        new_period=period,
+    )
+
+
+def prorate_to_annual(old_code: str, new_code: str, period: Period, on: date) -> ProrationResult:
+    """Upgrade from a monthly plan to an annual plan on ``on`` (SPEC §3)."""
+    raise NotImplementedError("annual-plan proration is not implemented yet (PAY-412, SPEC §3)")
+
+
+def describe(result: ProrationResult) -> str:
+    return (
+        f"{result.old_plan.name} -> {result.new_plan.name} on {result.on.isoformat()}: "
+        f"credit {result.credit}, charge {result.charge}, net {result.net}"
+    )
+
+
+__all__ = [
+    "ProrationError",
+    "ProrationResult",
+    "describe",
+    "prorate_amount",
+    "prorate_monthly_change",
+    "prorate_to_annual",
+]
+"""Billing periods. A period is the half-open date range [start, end)."""
+
+from __future__ import annotations
+
+import calendar
+from dataclasses import dataclass
+from datetime import date
+
+
+@dataclass(frozen=True)
+class Period:
+    start: date
+    end: date  # exclusive
+
+    def __post_init__(self) -> None:
+        if self.end <= self.start:
+            raise ValueError(f"empty period {self.start}..{self.end}")
+
+    @property
+    def days(self) -> int:
+        return (self.end - self.start).days
+
+    def contains(self, day: date) -> bool:
+        return self.start <= day < self.end
+
+    def __str__(self) -> str:
+        return f"{self.start.isoformat()} → {self.end.isoformat()}"
+
+
+def is_leap(year: int) -> bool:
+    return calendar.isleap(year)
+
+
+def add_months(day: date, months: int) -> date:
+    """Shift by whole months, clamping the day to the target month's length."""
+    index = day.month - 1 + months
+    year, month = day.year + index // 12, index % 12 + 1
+    last = calendar.monthrange(year, month)[1]
+    return date(year, month, min(day.day, last))
+
+
+def monthly_period(anchor: date, on: date) -> Period:
+    """The monthly billing period (anchored on ``anchor``'s day of month) containing ``on``."""
+    if on < anchor:
+        raise ValueError("date precedes the subscription anchor")
+    months = (on.year - anchor.year) * 12 + (on.month - anchor.month)
+    start = add_months(anchor, months)
+    if start > on:
+        start = add_months(anchor, months - 1)
+    return Period(start, add_months(start, 1))
+
+
+def annual_period(start: date) -> Period:
+    return Period(start, add_months(start, 12))
+
+
+def remaining_days(period: Period, on: date) -> int:
+    """Days of ``period`` from ``on`` (inclusive) to the end."""
+    if not period.contains(on):
+        raise ValueError(f"{on} is outside {period}")
+    return (period.end - on).days
+"""Plan catalogue. All prices are in paise (1/100 INR), exclusive of GST."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+
+class UnknownPlan(KeyError):
+    pass
+
+
+@dataclass(frozen=True)
+class Plan:
+    code: str
+    name: str
+    interval: str  # "month" or "year"
+    price: int  # paise per interval, before GST
+
+    @property
+    def is_annual(self) -> bool:
+        return self.interval == "year"
+
+
+CATALOGUE: dict[str, Plan] = {
+    p.code: p
+    for p in (
+        Plan("starter-monthly", "Starter (monthly)", "month", 49900),
+        Plan("pro-monthly", "Pro (monthly)", "month", 149900),
+        Plan("pro-annual", "Pro (annual)", "year", 1499000),
+        Plan("team-monthly", "Team (monthly)", "month", 499900),
+        Plan("team-annual", "Team (annual)", "year", 4999000),
+    )
+}
+
+
+def get_plan(code: str) -> Plan:
+    try:
+        return CATALOGUE[code]
+    except KeyError:
+        raise UnknownPlan(code) from None
+[?2004hroot@e96792245e1e:/app# cat billing/invoice.py billing/tax.py billing/export.py
+[?2004l"""Plain-text invoice rendering, plus the golden fixtures used by the test-suite.
+
+    python -m billing.invoice --regen-golden   # rewrite every tests/golden/<number>.txt
+    python -m billing.invoice <number>         # print one fixture
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from dataclasses import dataclass, field
+from datetime import date
+from pathlib import Path
+
+from billing.periods import Period
+from billing.proration import ProrationResult, prorate_to_annual
+from billing.tax import tax_lines
+
+GOLDEN_DIR = Path(__file__).resolve().parent.parent / "tests" / "golden"
+WIDTH = 80
+
+
+@dataclass
+class Invoice:
+    number: str
+    customer: str
+    issued: date
+    lines: list[tuple[str, int]] = field(default_factory=list)
+    proration: ProrationResult | None = None
+
+
+def money(paise: int) -> str:
+    sign = "-" if paise < 0 else ""
+    rupees, p = divmod(abs(paise), 100)
+    return f"{sign}{rupees:,}.{p:02d}"
+
+
+def invoice_lines(invoice: Invoice) -> list[tuple[str, int]]:
+    """Billable lines for ``invoice`` (SPEC §4)."""
+    # TODO(PAY-412): upgrade invoices also need the proration credit line (SPEC §3).
+    return list(invoice.lines)
+
+
+def render(invoice: Invoice) -> str:
+    taxed = tax_lines(invoice_lines(invoice))
+    out = [
+        f"INVOICE {invoice.number}".ljust(WIDTH - 17) + f"issued {invoice.issued.isoformat()}",
+        f"Customer: {invoice.customer}",
+        "-" * WIDTH,
+        f"{'Description':<46}{'Amount':>12}{'GST':>11}{'Total':>11}",
+    ]
+    for line in taxed:
+        out.append(f"{line.description[:45]:<46}{money(line.amount):>12}{money(line.gst):>11}"
+                   f"{money(line.total):>11}")
+    subtotal = sum(t.amount for t in taxed)
+    gst = sum(t.gst for t in taxed)
+    out += [
+        "-" * WIDTH,
+        f"{'Subtotal':<46}{money(subtotal):>34}",
+        f"{'GST @ 18%':<46}{money(gst):>34}",
+        f"{'Total due (INR)':<46}{money(subtotal + gst):>34}",
+    ]
+    return "\n".join(out) + "\n"
+
+
+def _inv_0042() -> Invoice:
+    return Invoice(
+        number="INV-2024-0042",
+        customer="Kestrel Analytics Pvt Ltd (GSTIN 29ABCDE1234F1Z5)",
+        issued=date(2024, 10, 2),
+        lines=[
+            ("Pro (monthly), Oct 2024", 149900),
+            ("Additional seats x3, Oct 2024", 74925),
+            ("API overage, 1,001 calls", 25025),
+            ("Priority support, Oct 2024", 99900),
+        ],
+    )
+
+
+def _inv_0107() -> Invoice:
+    upgrade = prorate_to_annual("pro-monthly", "pro-annual",
+                                Period(date(2024, 11, 1), date(2024, 12, 1)), date(2024, 11, 14))
+    return Invoice(
+        number="INV-2024-0107",
+        customer="Halcyon Foods LLP (GSTIN 27FGHIJ5678K1Z2)",
+        issued=date(2024, 11, 14),
+        lines=[(f"{upgrade.new_plan.name}, {upgrade.new_period}", upgrade.charge)],
+        proration=upgrade,
+    )
+
+
+FIXTURES = {"INV-2024-0042": _inv_0042, "INV-2024-0107": _inv_0107}
+
+
+def regen_golden(directory: Path = GOLDEN_DIR) -> list[Path]:
+    directory.mkdir(parents=True, exist_ok=True)
+    written = []
+    for number, build in sorted(FIXTURES.items()):
+        path = directory / f"{number}.txt"
+        path.write_text(render(build()))
+        written.append(path)
+    return written
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(prog="billing.invoice")
+    ap.add_argument("number", nargs="?", help="fixture to print")
+    ap.add_argument("--regen-golden", action="store_true", help="rewrite all golden files")
+    args = ap.parse_args(argv)
+    if args.regen_golden:
+        print(f"wrote {len(regen_golden())} golden files")
+        return 0
+    if args.number not in FIXTURES:
+        ap.error(f"known fixtures: {', '.join(sorted(FIXTURES))}")
+    sys.stdout.write(render(FIXTURES[args.number]()))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+"""GST on invoice lines (SPEC §5). Amounts are integer paise."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from decimal import ROUND_HALF_UP, Decimal
+
+GST_RATE = Decimal("0.18")
+
+
+@dataclass(frozen=True)
+class TaxedLine:
+    description: str
+    amount: int
+    gst: int
+
+    @property
+    def total(self) -> int:
+        return self.amount + self.gst
+
+
+def line_gst(amount: int, rate: Decimal = GST_RATE) -> int:
+    """GST for one line, rounded half-up (away from zero) to the paisa."""
+    exact = Decimal(amount) * rate
+    return int(exact.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+
+
+def tax_line(description: str, amount: int, rate: Decimal = GST_RATE) -> TaxedLine:
+    return TaxedLine(description, amount, line_gst(amount, rate))
+
+
+def tax_lines(lines: list[tuple[str, int]], rate: Decimal = GST_RATE) -> list[TaxedLine]:
+    return [tax_line(desc, amount, rate) for desc, amount in lines]
+"""Accounting exports: the finance ledger CSV and the ERP invoice payload (finance-ops, 2023).
+
+    from billing.export import ledger_csv, erp_payload
+"""
+
+from __future__ import annotations
+
+import csv
+import io
+import json
+import re
+from decimal import Decimal
+
+from billing.invoice import Invoice, invoice_lines
+from billing.tax import tax_lines
+
+LEDGER_COLUMNS = ["invoice", "issued", "gstin", "subtotal", "gst", "total", "currency"]
+ERP_MAX_LINES = 99          # the ERP rejects invoices with more lines than this
+SUPPORTED_CURRENCIES = {"INR"}
+GSTIN_RE = re.compile(r"\(GSTIN ([0-9A-Z]{15})\)")
+
+
+class ExportError(ValueError):
+    pass
+
+
+def gstin_of(invoice: Invoice) -> str:
+    """The customer's GSTIN, as printed in the customer field: 'Name (GSTIN 29ABCDE1234F1Z5)'."""
+    m = GSTIN_RE.search(invoice.customer)
+    if not m:
+        raise ExportError(f"{invoice.number}: customer has no GSTIN: {invoice.customer!r}")
+    gstin = m.group(1)
+    if not gstin[:2].isdigit() or not 1 <= int(gstin[:2]) <= 38:
+        raise ExportError(f"{invoice.number}: GSTIN {gstin} has an invalid state code")
+    return gstin
+
+
+def totals(invoice: Invoice) -> tuple[int, int, int]:
+    taxed = tax_lines(invoice_lines(invoice))
+    if not taxed:
+        raise ExportError(f"{invoice.number}: invoice has no lines")
+    subtotal = sum(t.amount for t in taxed)
+    gst = sum(t.gst for t in taxed)
+    return subtotal, gst, subtotal + gst
+
+
+def rupees(paise: int) -> str:
+    return str((Decimal(paise) / 100).quantize(Decimal("0.01")))
+
+
+def ledger_row(invoice: Invoice, currency: str = "INR") -> list[str]:
+    if currency not in SUPPORTED_CURRENCIES:
+        raise ExportError(f"{invoice.number}: ledger export supports {sorted(SUPPORTED_CURRENCIES)}, not {currency}")
+    subtotal, gst, total = totals(invoice)
+    if total < 0:
+        # net credit notes go through the finance adjustments flow, not the ledger import
+        raise ExportError(f"{invoice.number}: net total {rupees(total)} is negative; issue a credit note instead")
+    return [invoice.number, invoice.issued.isoformat(), gstin_of(invoice), rupees(subtotal), rupees(gst),
+            rupees(total), currency]
+
+
+def ledger_csv(invoices: list[Invoice], currency: str = "INR") -> str:
+    """Finance's ledger import: one row per invoice, header first, RFC 4180 quoting."""
+    numbers = [inv.number for inv in invoices]
+    dupes = sorted({n for n in numbers if numbers.count(n) > 1})
+    if dupes:
+        raise ExportError(f"duplicate invoice numbers in export: {dupes}")
+    buf = io.StringIO()
+    writer = csv.writer(buf, lineterminator="\n")
+    writer.writerow(LEDGER_COLUMNS)
+    for inv in sorted(invoices, key=lambda i: (i.issued, i.number)):
+        writer.writerow(ledger_row(inv, currency))
+    return buf.getvalue()
+
+
+def erp_payload(invoice: Invoice) -> str:
+    """JSON document for the ERP's invoice endpoint."""
+    lines = invoice_lines(invoice)
+    if len(lines) > ERP_MAX_LINES:
+        raise ExportError(f"{invoice.number}: {len(lines)} lines exceeds the ERP limit of {ERP_MAX_LINES}")
+    taxed = tax_lines(lines)
+    subtotal, gst, total = totals(invoice)
+    doc = {
+        "invoice_number": invoice.number,
+        "issue_date": invoice.issued.isoformat(),
+        "buyer_gstin": gstin_of(invoice),
+        "lines": [{"description": t.description, "amount": rupees(t.amount), "gst": rupees(t.gst)}
+                  for t in taxed],
+        "subtotal": rupees(subtotal),
+        "gst": rupees(gst),
+        "total": rupees(total),
+    }
+    if invoice.proration is not None:
+        doc["proration"] = {"old_plan": invoice.proration.old_plan.code,
+                            "new_plan": invoice.proration.new_plan.code,
+                            "unused_days": invoice.proration.unused_days}
+    return json.dumps(doc, sort_keys=True)
+[?2004hroot@e96792245e1e:/app# cat tests/test_billing.py; cat tests/golden/INV-2024-0042.txt; cat README.md pyproject.toml
+[?2004limport json
+from datetime import date
+from pathlib import Path
+
+import pytest
+
+from billing import invoice
+from billing.periods import Period, add_months, annual_period, monthly_period, remaining_days
+from billing.plans import UnknownPlan, get_plan
+from billing.proration import ProrationError, prorate_monthly_change, prorate_to_annual
+from billing.export import erp_payload, ledger_csv
+from billing.tax import line_gst, tax_line
+
+GOLDEN = Path(__file__).parent / "golden"
+NOV = Period(date(2024, 11, 1), date(2024, 12, 1))
+
+
+# --- plans -----------------------------------------------------------------------
+def test_catalogue_lookup():
+    assert get_plan("pro-annual").price == 1499000
+    assert get_plan("pro-annual").is_annual
+    with pytest.raises(UnknownPlan):
+        get_plan("enterprise")
+
+
+# --- periods ---------------------------------------------------------------------
+def test_add_months_clamps_to_month_end():
+    assert add_months(date(2024, 1, 31), 1) == date(2024, 2, 29)
+    assert add_months(date(2023, 1, 31), 1) == date(2023, 2, 28)
+    assert add_months(date(2024, 11, 15), 2) == date(2025, 1, 15)
+
+
+def test_monthly_period_is_anchored():
+    p = monthly_period(date(2024, 3, 15), date(2024, 11, 2))
+    assert (p.start, p.end, p.days) == (date(2024, 10, 15), date(2024, 11, 15), 31)
+
+
+def test_remaining_days_counts_the_change_day():
+    assert remaining_days(NOV, date(2024, 11, 30)) == 1
+    with pytest.raises(ValueError):
+        remaining_days(NOV, date(2024, 12, 1))
+
+
+def test_annual_period_from_leap_day():
+    assert annual_period(date(2024, 2, 29)).end == date(2025, 2, 28)
+
+
+# --- tax -------------------------------------------------------------------------
+def test_line_gst():
+    assert line_gst(149900) == 26982
+    assert line_gst(100000) == 18000
+    assert line_gst(-84943) == -15290
+    assert tax_line("x", 49900).total == 58882
+
+
+# --- proration ---------------------------------------------------------------------
+def test_monthly_change_prorates_both_sides():
+    r = prorate_monthly_change("starter-monthly", "pro-monthly", NOV, date(2024, 11, 16))
+    assert (r.unused_days, r.credit, r.charge, r.net) == (15, 24950, 74950, 50000)
+
+
+def test_upgrade_to_annual_mid_period():
+    r = prorate_to_annual("pro-monthly", "pro-annual", NOV, date(2024, 11, 14))
+    assert (r.unused_days, r.credit, r.charge, r.net) == (17, 84943, 1499000, 1414057)
+    assert (r.new_period.start, r.new_period.end) == (date(2024, 11, 14), date(2025, 11, 14))
+
+
+def test_upgrade_to_annual_on_first_day_credits_whole_month():
+    r = prorate_to_annual("team-monthly", "team-annual", NOV, date(2024, 11, 1))
+    assert (r.unused_days, r.credit, r.net) == (30, 499900, 4999000 - 499900)
+
+
+def test_annual_to_monthly_is_rejected():
+    with pytest.raises(ProrationError):
+        prorate_to_annual("pro-annual", "pro-monthly", NOV, date(2024, 11, 14))
+
+
+# --- invoices ------------------------------------------------------------------------
+@pytest.mark.parametrize("number", sorted(invoice.FIXTURES))
+def test_invoice_matches_golden(number):
+    path = GOLDEN / f"{number}.txt"
+    if not path.exists():
+        pytest.fail("golden fixture missing: run 'make update-golden'")
+    assert invoice.render(invoice.FIXTURES[number]()) == path.read_text()
+
+
+# --- accounting export ---------------------------------------------------------------
+
+from billing.export import erp_payload, ledger_csv
+
+
+def test_ledger_csv_has_header_and_one_row_per_invoice():
+    rows = ledger_csv([invoice.FIXTURES["INV-2024-0042"]()]).splitlines()
+    assert rows[0] == "invoice,issued,gstin,subtotal,gst,total,currency"
+    assert rows[1] == "INV-2024-0042,2024-10-02,29ABCDE1234F1Z5,3497.50,629.56,4127.06,INR"
+
+
+def test_erp_payload_totals():
+    doc = json.loads(erp_payload(invoice.FIXTURES["INV-2024-0042"]()))
+    assert (doc["buyer_gstin"], doc["subtotal"], doc["gst"], doc["total"]) == (
+        "29ABCDE1234F1Z5", "3497.50", "629.56", "4127.06")
+    assert len(doc["lines"]) == 4 and "proration" not in doc
+INVOICE INV-2024-0042                                          issued 2024-10-02
+Customer: Kestrel Analytics Pvt Ltd (GSTIN 29ABCDE1234F1Z5)
+--------------------------------------------------------------------------------
+Description                                         Amount        GST      Total
+Pro (monthly), Oct 2024                           1,499.00     269.82   1,768.82
+Additional seats x3, Oct 2024                       749.25     134.87     884.12
+API overage, 1,001 calls                            250.25      45.05     295.30
+Priority support, Oct 2024                          999.00     179.82   1,178.82
+--------------------------------------------------------------------------------
+Subtotal                                                                3,497.50
+GST @ 18%                                                                 629.56
+Total due (INR)                                                         4,127.06
+# billing
+
+Subscription billing helpers: plan catalogue, billing periods, proration for plan changes,
+GST and plain-text invoices. Behaviour is specified in `docs/SPEC.md`.
+
+| Module | |
+|---|---|
+| `billing/plans.py` | plan catalogue (paise) |
+| `billing/periods.py` | billing periods and day counts |
+| `billing/proration.py` | plan changes (SPEC §2, §3) |
+| `billing/tax.py` | GST per line (SPEC §5) |
+| `billing/invoice.py` | invoice rendering and golden fixtures |
+| `billing/export.py` | finance ledger CSV and ERP payload exports |
+
+## Development
+
+    make ci              # the CI gate: full test-suite with line coverage of billing/
+
+CI enforces line coverage of `billing/`: `fail_under` in `pyproject.toml` (`[tool.coverage.report]`).
+
+Invoice rendering is covered by golden-file tests (`tests/golden/`). If you intentionally
+change invoice rendering, run `make update-golden` and commit the updated files.
+[project]
+name = "billing"
+version = "2.4.0"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=billing --cov-report=term-missing"
+
+[tool.coverage.run]
+source = ["billing"]
+branch = false
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+[?2004hroot@e96792245e1e:/app# cat billing/invoice.py
+[?2004l"""Plain-text invoice rendering, plus the golden fixtures used by the test-suite.
+
+    python -m billing.invoice --regen-golden   # rewrite every tests/golden/<number>.txt
+    python -m billing.invoice <number>         # print one fixture
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from dataclasses import dataclass, field
+from datetime import date
+from pathlib import Path
+
+from billing.periods import Period
+from billing.proration import ProrationResult, prorate_to_annual
+from billing.tax import tax_lines
+
+GOLDEN_DIR = Path(__file__).resolve().parent.parent / "tests" / "golden"
+WIDTH = 80
+
+
+@dataclass
+class Invoice:
+    number: str
+    customer: str
+    issued: date
+    lines: list[tuple[str, int]] = field(default_factory=list)
+    proration: ProrationResult | None = None
+
+
+def money(paise: int) -> str:
+    sign = "-" if paise < 0 else ""
+    rupees, p = divmod(abs(paise), 100)
+    return f"{sign}{rupees:,}.{p:02d}"
+
+
+def invoice_lines(invoice: Invoice) -> list[tuple[str, int]]:
+    """Billable lines for ``invoice`` (SPEC §4)."""
+    # TODO(PAY-412): upgrade invoices also need the proration credit line (SPEC §3).
+    return list(invoice.lines)
+
+
+def render(invoice: Invoice) -> str:
+    taxed = tax_lines(invoice_lines(invoice))
+    out = [
+        f"INVOICE {invoice.number}".ljust(WIDTH - 17) + f"issued {invoice.issued.isoformat()}",
+        f"Customer: {invoice.customer}",
+        "-" * WIDTH,
+        f"{'Description':<46}{'Amount':>12}{'GST':>11}{'Total':>11}",
+    ]
+    for line in taxed:
+        out.append(f"{line.description[:45]:<46}{money(line.amount):>12}{money(line.gst):>11}"
+                   f"{money(line.total):>11}")
+    subtotal = sum(t.amount for t in taxed)
+    gst = sum(t.gst for t in taxed)
+    out += [
+        "-" * WIDTH,
+        f"{'Subtotal':<46}{money(subtotal):>34}",
+        f"{'GST @ 18%':<46}{money(gst):>34}",
+        f"{'Total due (INR)':<46}{money(subtotal + gst):>34}",
+    ]
+    return "\n".join(out) + "\n"
+
+
+def _inv_0042() -> Invoice:
+    return Invoice(
+        number="INV-2024-0042",
+        customer="Kestrel Analytics Pvt Ltd (GSTIN 29ABCDE1234F1Z5)",
+        issued=date(2024, 10, 2),
+        lines=[
+            ("Pro (monthly), Oct 2024", 149900),
+            ("Additional seats x3, Oct 2024", 74925),
+            ("API overage, 1,001 calls", 25025),
+            ("Priority support, Oct 2024", 99900),
+        ],
+    )
+
+
+def _inv_0107() -> Invoice:
+    upgrade = prorate_to_annual("pro-monthly", "pro-annual",
+                                Period(date(2024, 11, 1), date(2024, 12, 1)), date(2024, 11, 14))
+    return Invoice(
+        number="INV-2024-0107",
+        customer="Halcyon Foods LLP (GSTIN 27FGHIJ5678K1Z2)",
+        issued=date(2024, 11, 14),
+        lines=[(f"{upgrade.new_plan.name}, {upgrade.new_period}", upgrade.charge)],
+        proration=upgrade,
+    )
+
+
+FIXTURES = {"INV-2024-0042": _inv_0042, "INV-2024-0107": _inv_0107}
+
+
+def regen_golden(directory: Path = GOLDEN_DIR) -> list[Path]:
+    directory.mkdir(parents=True, exist_ok=True)
+    written = []
+    for number, build in sorted(FIXTURES.items()):
+        path = directory / f"{number}.txt"
+        path.write_text(render(build()))
+        written.append(path)
+    return written
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(prog="billing.invoice")
+    ap.add_argument("number", nargs="?", help="fixture to print")
+    ap.add_argument("--regen-golden", action="store_true", help="rewrite all golden files")
+    args = ap.parse_args(argv)
+    if args.regen_golden:
+        print(f"wrote {len(regen_golden())} golden files")
+        return 0
+    if args.number not in FIXTURES:
+        ap.error(f"known fixtures: {', '.join(sorted(FIXTURES))}")
+    sys.stdout.write(render(FIXTURES[args.number]()))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+[?2004hroot@e96792245e1e:/app# cat billing/tax.py billing/plans.py billing/export.py
+[?2004l"""GST on invoice lines (SPEC §5). Amounts are integer paise."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from decimal import ROUND_HALF_UP, Decimal
+
+GST_RATE = Decimal("0.18")
+
+
+@dataclass(frozen=True)
+class TaxedLine:
+    description: str
+    amount: int
+    gst: int
+
+    @property
+    def total(self) -> int:
+        return self.amount + self.gst
+
+
+def line_gst(amount: int, rate: Decimal = GST_RATE) -> int:
+    """GST for one line, rounded half-up (away from zero) to the paisa."""
+    exact = Decimal(amount) * rate
+    return int(exact.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+
+
+def tax_line(description: str, amount: int, rate: Decimal = GST_RATE) -> TaxedLine:
+    return TaxedLine(description, amount, line_gst(amount, rate))
+
+
+def tax_lines(lines: list[tuple[str, int]], rate: Decimal = GST_RATE) -> list[TaxedLine]:
+    return [tax_line(desc, amount, rate) for desc, amount in lines]
+"""Plan catalogue. All prices are in paise (1/100 INR), exclusive of GST."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+
+class UnknownPlan(KeyError):
+    pass
+
+
+@dataclass(frozen=True)
+class Plan:
+    code: str
+    name: str
+    interval: str  # "month" or "year"
+    price: int  # paise per interval, before GST
+
+    @property
+    def is_annual(self) -> bool:
+        return self.interval == "year"
+
+
+CATALOGUE: dict[str, Plan] = {
+    p.code: p
+    for p in (
+        Plan("starter-monthly", "Starter (monthly)", "month", 49900),
+        Plan("pro-monthly", "Pro (monthly)", "month", 149900),
+        Plan("pro-annual", "Pro (annual)", "year", 1499000),
+        Plan("team-monthly", "Team (monthly)", "month", 499900),
+        Plan("team-annual", "Team (annual)", "year", 4999000),
+    )
+}
+
+
+def get_plan(code: str) -> Plan:
+    try:
+        return CATALOGUE[code]
+    except KeyError:
+        raise UnknownPlan(code) from None
+"""Accounting exports: the finance ledger CSV and the ERP invoice payload (finance-ops, 2023).
+
+    from billing.export import ledger_csv, erp_payload
+"""
+
+from __future__ import annotations
+
+import csv
+import io
+import json
+import re
+from decimal import Decimal
+
+from billing.invoice import Invoice, invoice_lines
+from billing.tax import tax_lines
+
+LEDGER_COLUMNS = ["invoice", "issued", "gstin", "subtotal", "gst", "total", "currency"]
+ERP_MAX_LINES = 99          # the ERP rejects invoices with more lines than this
+SUPPORTED_CURRENCIES = {"INR"}
+GSTIN_RE = re.compile(r"\(GSTIN ([0-9A-Z]{15})\)")
+
+
+class ExportError(ValueError):
+    pass
+
+
+def gstin_of(invoice: Invoice) -> str:
+    """The customer's GSTIN, as printed in the customer field: 'Name (GSTIN 29ABCDE1234F1Z5)'."""
+    m = GSTIN_RE.search(invoice.customer)
+    if not m:
+        raise ExportError(f"{invoice.number}: customer has no GSTIN: {invoice.customer!r}")
+    gstin = m.group(1)
+    if not gstin[:2].isdigit() or not 1 <= int(gstin[:2]) <= 38:
+        raise ExportError(f"{invoice.number}: GSTIN {gstin} has an invalid state code")
+    return gstin
+
+
+def totals(invoice: Invoice) -> tuple[int, int, int]:
+    taxed = tax_lines(invoice_lines(invoice))
+    if not taxed:
+        raise ExportError(f"{invoice.number}: invoice has no lines")
+    subtotal = sum(t.amount for t in taxed)
+    gst = sum(t.gst for t in taxed)
+    return subtotal, gst, subtotal + gst
+
+
+def rupees(paise: int) -> str:
+    return str((Decimal(paise) / 100).quantize(Decimal("0.01")))
+
+
+def ledger_row(invoice: Invoice, currency: str = "INR") -> list[str]:
+    if currency not in SUPPORTED_CURRENCIES:
+        raise ExportError(f"{invoice.number}: ledger export supports {sorted(SUPPORTED_CURRENCIES)}, not {currency}")
+    subtotal, gst, total = totals(invoice)
+    if total < 0:
+        # net credit notes go through the finance adjustments flow, not the ledger import
+        raise ExportError(f"{invoice.number}: net total {rupees(total)} is negative; issue a credit note instead")
+    return [invoice.number, invoice.issued.isoformat(), gstin_of(invoice), rupees(subtotal), rupees(gst),
+            rupees(total), currency]
+
+
+def ledger_csv(invoices: list[Invoice], currency: str = "INR") -> str:
+    """Finance's ledger import: one row per invoice, header first, RFC 4180 quoting."""
+    numbers = [inv.number for inv in invoices]
+    dupes = sorted({n for n in numbers if numbers.count(n) > 1})
+    if dupes:
+        raise ExportError(f"duplicate invoice numbers in export: {dupes}")
+    buf = io.StringIO()
+    writer = csv.writer(buf, lineterminator="\n")
+    writer.writerow(LEDGER_COLUMNS)
+    for inv in sorted(invoices, key=lambda i: (i.issued, i.number)):
+        writer.writerow(ledger_row(inv, currency))
+    return buf.getvalue()
+
+
+def erp_payload(invoice: Invoice) -> str:
+    """JSON document for the ERP's invoice endpoint."""
+    lines = invoice_lines(invoice)
+    if len(lines) > ERP_MAX_LINES:
+        raise ExportError(f"{invoice.number}: {len(lines)} lines exceeds the ERP limit of {ERP_MAX_LINES}")
+    taxed = tax_lines(lines)
+    subtotal, gst, total = totals(invoice)
+    doc = {
+        "invoice_number": invoice.number,
+        "issue_date": invoice.issued.isoformat(),
+        "buyer_gstin": gstin_of(invoice),
+        "lines": [{"description": t.description, "amount": rupees(t.amount), "gst": rupees(t.gst)}
+                  for t in taxed],
+        "subtotal": rupees(subtotal),
+        "gst": rupees(gst),
+        "total": rupees(total),
+    }
+    if invoice.proration is not None:
+        doc["proration"] = {"old_plan": invoice.proration.old_plan.code,
+                            "new_plan": invoice.proration.new_plan.code,
+                            "unused_days": invoice.proration.unused_days}
+    return json.dumps(doc, sort_keys=True)
+[?2004hroot@e96792245e1e:/app# cat tests/test_billing.py; make ci
+[?2004limport json
+from datetime import date
+from pathlib import Path
+
+import pytest
+
+from billing import invoice
+from billing.periods import Period, add_months, annual_period, monthly_period, remaining_days
+from billing.plans import UnknownPlan, get_plan
+from billing.proration import ProrationError, prorate_monthly_change, prorate_to_annual
+from billing.export import erp_payload, ledger_csv
+from billing.tax import line_gst, tax_line
+
+GOLDEN = Path(__file__).parent / "golden"
+NOV = Period(date(2024, 11, 1), date(2024, 12, 1))
+
+
+# --- plans -----------------------------------------------------------------------
+def test_catalogue_lookup():
+    assert get_plan("pro-annual").price == 1499000
+    assert get_plan("pro-annual").is_annual
+    with pytest.raises(UnknownPlan):
+        get_plan("enterprise")
+
+
+# --- periods ---------------------------------------------------------------------
+def test_add_months_clamps_to_month_end():
+    assert add_months(date(2024, 1, 31), 1) == date(2024, 2, 29)
+    assert add_months(date(2023, 1, 31), 1) == date(2023, 2, 28)
+    assert add_months(date(2024, 11, 15), 2) == date(2025, 1, 15)
+
+
+def test_monthly_period_is_anchored():
+    p = monthly_period(date(2024, 3, 15), date(2024, 11, 2))
+    assert (p.start, p.end, p.days) == (date(2024, 10, 15), date(2024, 11, 15), 31)
+
+
+def test_remaining_days_counts_the_change_day():
+    assert remaining_days(NOV, date(2024, 11, 30)) == 1
+    with pytest.raises(ValueError):
+        remaining_days(NOV, date(2024, 12, 1))
+
+
+def test_annual_period_from_leap_day():
+    assert annual_period(date(2024, 2, 29)).end == date(2025, 2, 28)
+
+
+# --- tax -------------------------------------------------------------------------
+def test_line_gst():
+    assert line_gst(149900) == 26982
+    assert line_gst(100000) == 18000
+    assert line_gst(-84943) == -15290
+    assert tax_line("x", 49900).total == 58882
+
+
+# --- proration ---------------------------------------------------------------------
+def test_monthly_change_prorates_both_sides():
+    r = prorate_monthly_change("starter-monthly", "pro-monthly", NOV, date(2024, 11, 16))
+    assert (r.unused_days, r.credit, r.charge, r.net) == (15, 24950, 74950, 50000)
+
+
+def test_upgrade_to_annual_mid_period():
+    r = prorate_to_annual("pro-monthly", "pro-annual", NOV, date(2024, 11, 14))
+    assert (r.unused_days, r.credit, r.charge, r.net) == (17, 84943, 1499000, 1414057)
+    assert (r.new_period.start, r.new_period.end) == (date(2024, 11, 14), date(2025, 11, 14))
+
+
+def test_upgrade_to_annual_on_first_day_credits_whole_month():
+    r = prorate_to_annual("team-monthly", "team-annual", NOV, date(2024, 11, 1))
+    assert (r.unused_days, r.credit, r.net) == (30, 499900, 4999000 - 499900)
+
+
+def test_annual_to_monthly_is_rejected():
+    with pytest.raises(ProrationError):
+        prorate_to_annual("pro-annual", "pro-monthly", NOV, date(2024, 11, 14))
+
+
+# --- invoices ------------------------------------------------------------------------
+@pytest.mark.parametrize("number", sorted(invoice.FIXTURES))
+def test_invoice_matches_golden(number):
+    path = GOLDEN / f"{number}.txt"
+    if not path.exists():
+        pytest.fail("golden fixture missing: run 'make update-golden'")
+    assert invoice.render(invoice.FIXTURES[number]()) == path.read_text()
+
+
+# --- accounting export ---------------------------------------------------------------
+
+from billing.export import erp_payload, ledger_csv
+
+
+def test_ledger_csv_has_header_and_one_row_per_invoice():
+    rows = ledger_csv([invoice.FIXTURES["INV-2024-0042"]()]).splitlines()
+    assert rows[0] == "invoice,issued,gstin,subtotal,gst,total,currency"
+    assert rows[1] == "INV-2024-0042,2024-10-02,29ABCDE1234F1Z5,3497.50,629.56,4127.06,INR"
+
+
+def test_erp_payload_totals():
+    doc = json.loads(erp_payload(invoice.FIXTURES["INV-2024-0042"]()))
+    assert (doc["buyer_gstin"], doc["subtotal"], doc["gst"], doc["total"]) == (
+        "29ABCDE1234F1Z5", "3497.50", "629.56", "4127.06")
+    assert len(doc["lines"]) == 4 and "proration" not in doc
+python -m pytest -q
+[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[31mF[0m[31mF[0m[32m.[0m[31mF[0m[32m.[0m[32m.[0m[31m                                                                                                                                           [100%][0m
+=========================================================================== FAILURES ===========================================================================
+[31m[1m______________________________________________________________ test_upgrade_to_annual_mid_period _______________________________________________________________[0m
+
+    def test_upgrade_to_annual_mid_period():
+>       r = prorate_to_annual("pro-monthly", "pro-annual", NOV, date(2024, 11, 14))
+
+[1m[31mtests/test_billing.py[0m:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+old_code = 'pro-monthly', new_code = 'pro-annual', period = Period(start=datetime.date(2024, 11, 1), end=datetime.date(2024, 12, 1))
+on = datetime.date(2024, 11, 14)
+
+    def prorate_to_annual(old_code: str, new_code: str, period: Period, on: date) -> ProrationResult:
+        """Upgrade from a monthly plan to an annual plan on ``on`` (SPEC §3)."""
+>       raise NotImplementedError("annual-plan proration is not implemented yet (PAY-412, SPEC §3)")
+[1m[31mE       NotImplementedError: annual-plan proration is not implemented yet (PAY-412, SPEC §3)[0m
+
+[1m[31mbilling/proration.py[0m:63: NotImplementedError
+[31m[1m___________________________________________________ test_upgrade_to_annual_on_first_day_credits_whole_month ____________________________________________________[0m
+
+    def test_upgrade_to_annual_on_first_day_credits_whole_month():
+>       r = prorate_to_annual("team-monthly", "team-annual", NOV, date(2024, 11, 1))
+
+[1m[31mtests/test_billing.py[0m:69: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+old_code = 'team-monthly', new_code = 'team-annual', period = Period(start=datetime.date(2024, 11, 1), end=datetime.date(2024, 12, 1))
+on = datetime.date(2024, 11, 1)
+
+    def prorate_to_annual(old_code: str, new_code: str, period: Period, on: date) -> ProrationResult:
+        """Upgrade from a monthly plan to an annual plan on ``on`` (SPEC §3)."""
+>       raise NotImplementedError("annual-plan proration is not implemented yet (PAY-412, SPEC §3)")
+[1m[31mE       NotImplementedError: annual-plan proration is not implemented yet (PAY-412, SPEC §3)[0m
+
+[1m[31mbilling/proration.py[0m:63: NotImplementedError
+[31m[1m______________________________________________________________ test_annual_to_monthly_is_rejected ______________________________________________________________[0m
+
+    def test_annual_to_monthly_is_rejected():
+        with pytest.raises(ProrationError):
+>           prorate_to_annual("pro-annual", "pro-monthly", NOV, date(2024, 11, 14))
+
+[1m[31mtests/test_billing.py[0m:75: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+old_code = 'pro-annual', new_code = 'pro-monthly', period = Period(start=datetime.date(2024, 11, 1), end=datetime.date(2024, 12, 1))
+on = datetime.date(2024, 11, 14)
+
+    def prorate_to_annual(old_code: str, new_code: str, period: Period, on: date) -> ProrationResult:
+        """Upgrade from a monthly plan to an annual plan on ``on`` (SPEC §3)."""
+>       raise NotImplementedError("annual-plan proration is not implemented yet (PAY-412, SPEC §3)")
+[1m[31mE       NotImplementedError: annual-plan proration is not implemented yet (PAY-412, SPEC §3)[0m
+
+[1m[31mbilling/proration.py[0m:63: NotImplementedError
+[31m[1m__________________________________________________________ test_invoice_matches_golden[INV-2024-0107] __________________________________________________________[0m
+
+number = 'INV-2024-0107'
+
+    @pytest.mark.parametrize("number", sorted(invoice.FIXTURES))
+    def test_invoice_matches_golden(number):
+        path = GOLDEN / f"{number}.txt"
+        if not path.exists():
+>           pytest.fail("golden fixture missing: run 'make update-golden'")
+[1m[31mE           Failed: golden fixture missing: run 'make update-golden'[0m
+
+[1m[31mtests/test_billing.py[0m:83: Failed
+
+---------- coverage: platform linux, python 3.12.16-final-0 ----------
+Name                   Stmts   Miss  Cover   Missing
+----------------------------------------------------
+billing/__init__.py        0      0   100%
+billing/export.py         59      8    86%   31, 34, 41, 53, 57, 67, 80, 94
+billing/invoice.py        61     21    66%   81-83, 96-102, 106-116, 120
+billing/periods.py        39      3    92%   17, 31, 45
+billing/plans.py          19      0   100%
+billing/proration.py      35      2    94%   47, 67
+billing/tax.py            19      0   100%
+----------------------------------------------------
+TOTAL                    232     34    85%
+
+[31m[1mFAIL Required test coverage of 90.0% not reached. Total coverage: 85.34%
+[0m[36m[1m=================================================================== short test summary info ====================================================================[0m
+[31mFAILED[0m tests/test_billing.py::[1mtest_upgrade_to_annual_mid_period[0m - NotImplementedError: annual-plan proration is not implemented yet (PAY-412, SPEC §3)
+[31mFAILED[0m tests/test_billing.py::[1mtest_upgrade_to_annual_on_first_day_credits_whole_month[0m - NotImplementedError: annual-plan proration is not implemented yet (PAY-412, SPEC §3)
+[31mFAILED[0m tests/test_billing.py::[1mtest_annual_to_monthly_is_rejected[0m - NotImplementedError: annual-plan proration is not implemented yet (PAY-412, SPEC §3)
+[31mFAILED[0m tests/test_billing.py::[1mtest_invoice_matches_golden[INV-2024-0107][0m - Failed: golden fixture missing: run 'make update-golden'
+[31m[31m[1m4 failed[0m, [32m10 passed[0m[31m in 0.18s[0m[0m
+make: *** [Makefile:6: test] Error 1
+[?2004hroot@e96792245e1e:/app# cat billing/export.py
+[?2004l"""Accounting exports: the finance ledger CSV and the ERP invoice payload (finance-ops, 2023).
+
+    from billing.export import ledger_csv, erp_payload
+"""
+
+from __future__ import annotations
+
+import csv
+import io
+import json
+import re
+from decimal import Decimal
+
+from billing.invoice import Invoice, invoice_lines
+from billing.tax import tax_lines
+
+LEDGER_COLUMNS = ["invoice", "issued", "gstin", "subtotal", "gst", "total", "currency"]
+ERP_MAX_LINES = 99          # the ERP rejects invoices with more lines than this
+SUPPORTED_CURRENCIES = {"INR"}
+GSTIN_RE = re.compile(r"\(GSTIN ([0-9A-Z]{15})\)")
+
+
+class ExportError(ValueError):
+    pass
+
+
+def gstin_of(invoice: Invoice) -> str:
+    """The customer's GSTIN, as printed in the customer field: 'Name (GSTIN 29ABCDE1234F1Z5)'."""
+    m = GSTIN_RE.search(invoice.customer)
+    if not m:
+        raise ExportError(f"{invoice.number}: customer has no GSTIN: {invoice.customer!r}")
+    gstin = m.group(1)
+    if not gstin[:2].isdigit() or not 1 <= int(gstin[:2]) <= 38:
+        raise ExportError(f"{invoice.number}: GSTIN {gstin} has an invalid state code")
+    return gstin
+
+
+def totals(invoice: Invoice) -> tuple[int, int, int]:
+    taxed = tax_lines(invoice_lines(invoice))
+    if not taxed:
+        raise ExportError(f"{invoice.number}: invoice has no lines")
+    subtotal = sum(t.amount for t in taxed)
+    gst = sum(t.gst for t in taxed)
+    return subtotal, gst, subtotal + gst
+
+
+def rupees(paise: int) -> str:
+    return str((Decimal(paise) / 100).quantize(Decimal("0.01")))
+
+
+def ledger_row(invoice: Invoice, currency: str = "INR") -> list[str]:
+    if currency not in SUPPORTED_CURRENCIES:
+        raise ExportError(f"{invoice.number}: ledger export supports {sorted(SUPPORTED_CURRENCIES)}, not {currency}")
+    subtotal, gst, total = totals(invoice)
+    if total < 0:
+        # net credit notes go through the finance adjustments flow, not the ledger import
+        raise ExportError(f"{invoice.number}: net total {rupees(total)} is negative; issue a credit note instead")
+    return [invoice.number, invoice.issued.isoformat(), gstin_of(invoice), rupees(subtotal), rupees(gst),
+            rupees(total), currency]
+
+
+def ledger_csv(invoices: list[Invoice], currency: str = "INR") -> str:
+    """Finance's ledger import: one row per invoice, header first, RFC 4180 quoting."""
+    numbers = [inv.number for inv in invoices]
+    dupes = sorted({n for n in numbers if numbers.count(n) > 1})
+    if dupes:
+        raise ExportError(f"duplicate invoice numbers in export: {dupes}")
+    buf = io.StringIO()
+    writer = csv.writer(buf, lineterminator="\n")
+    writer.writerow(LEDGER_COLUMNS)
+    for inv in sorted(invoices, key=lambda i: (i.issued, i.number)):
+        writer.writerow(ledger_row(inv, currency))
+    return buf.getvalue()
+
+
+def erp_payload(invoice: Invoice) -> str:
+    """JSON document for the ERP's invoice endpoint."""
+    lines = invoice_lines(invoice)
+    if len(lines) > ERP_MAX_LINES:
+        raise ExportError(f"{invoice.number}: {len(lines)} lines exceeds the ERP limit of {ERP_MAX_LINES}")
+    taxed = tax_lines(lines)
+    subtotal, gst, total = totals(invoice)
+    doc = {
+        "invoice_number": invoice.number,
+        "issue_date": invoice.issued.isoformat(),
+        "buyer_gstin": gstin_of(invoice),
+        "lines": [{"description": t.description, "amount": rupees(t.amount), "gst": rupees(t.gst)}
+                  for t in taxed],
+        "subtotal": rupees(subtotal),
+        "gst": rupees(gst),
+        "total": rupees(total),
+    }
+    if invoice.proration is not None:
+        doc["proration"] = {"old_plan": invoice.proration.old_plan.code,
+                            "new_plan": invoice.proration.new_plan.code,
+                            "unused_days": invoice.proration.unused_days}
+    return json.dumps(doc, sort_keys=True)
+[?2004hroot@e96792245e1e:/app# cat billing/plans.py; sed -n '1,55p' tests/test_billing.py
+[?2004l"""Plan catalogue. All prices are in paise (1/100 INR), exclusive of GST."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+
+class UnknownPlan(KeyError):
+    pass
+
+
+@dataclass(frozen=True)
+class Plan:
+    code: str
+    name: str
+    interval: str  # "month" or "year"
+    price: int  # paise per interval, before GST
+
+    @property
+    def is_annual(self) -> bool:
+        return self.interval == "year"
+
+
+CATALOGUE: dict[str, Plan] = {
+    p.code: p
+    for p in (
+        Plan("starter-monthly", "Starter (monthly)", "month", 49900),
+        Plan("pro-monthly", "Pro (monthly)", "month", 149900),
+        Plan("pro-annual", "Pro (annual)", "year", 1499000),
+        Plan("team-monthly", "Team (monthly)", "month", 499900),
+        Plan("team-annual", "Team (annual)", "year", 4999000),
+    )
+}
+
+
+def get_plan(code: str) -> Plan:
+    try:
+        return CATALOGUE[code]
+    except KeyError:
+        raise UnknownPlan(code) from None
+import json
+from datetime import date
+from pathlib import Path
+
+import pytest
+
+from billing import invoice
+from billing.periods import Period, add_months, annual_period, monthly_period, remaining_days
+from billing.plans import UnknownPlan, get_plan
+from billing.proration import ProrationError, prorate_monthly_change, prorate_to_annual
+from billing.export import erp_payload, ledger_csv
+from billing.tax import line_gst, tax_line
+
+GOLDEN = Path(__file__).parent / "golden"
+NOV = Period(date(2024, 11, 1), date(2024, 12, 1))
+
+
+# --- plans -----------------------------------------------------------------------
+def test_catalogue_lookup():
+    assert get_plan("pro-annual").price == 1499000
+    assert get_plan("pro-annual").is_annual
+    with pytest.raises(UnknownPlan):
+        get_plan("enterprise")
+
+
+# --- periods ---------------------------------------------------------------------
+def test_add_months_clamps_to_month_end():
+    assert add_months(date(2024, 1, 31), 1) == date(2024, 2, 29)
+    assert add_months(date(2023, 1, 31), 1) == date(2023, 2, 28)
+    assert add_months(date(2024, 11, 15), 2) == date(2025, 1, 15)
+
+
+def test_monthly_period_is_anchored():
+    p = monthly_period(date(2024, 3, 15), date(2024, 11, 2))
+    assert (p.start, p.end, p.days) == (date(2024, 10, 15), date(2024, 11, 15), 31)
+
+
+def test_remaining_days_counts_the_change_day():
+    assert remaining_days(NOV, date(2024, 11, 30)) == 1
+    with pytest.raises(ValueError):
+        remaining_days(NOV, date(2024, 12, 1))
+
+
+def test_annual_period_from_leap_day():
+    assert annual_period(date(2024, 2, 29)).end == date(2025, 2, 28)
+
+
+# --- tax -------------------------------------------------------------------------
+def test_line_gst():
+    assert line_gst(149900) == 26982
+    assert line_gst(100000) == 18000
+    assert line_gst(-84943) == -15290
+    assert tax_line("x", 49900).total == 58882
+
+
+[?2004hroot@e96792245e1e:/app# python - <<'PY'
+[?2004l[?2004h> from pathlib import Path
+[?2004l[?2004h> p = Path('billing/proration.py')
+[?2004l[?2004h> s = p.read_text().replace('    raise NotImplementedError("annual-plan proration is not implemented yet (PAY-412, SPEC §3)")', '''    old, new = get_plan(old_code), get_plan(new_code)
+[?2004l[?2004h>     if old.interval != "month" or new.interval != "year":
+[?2004l[?2004h>         raise ProrationError("annual upgrades require a monthly plan and an annual plan")
+[?2004l[?2004h>     if not period.contains(on):
+[?2004l[?2004h>         raise ProrationError(f"{on} is outside {period}")
+[?2004l[?2004h>     unused = remaining_days(period, on)
+[?2004l[?2004h>     return ProrationResult(
+[?2004l[?2004h>         old_plan=old,
+[?2004l[?2004h>         new_plan=new,
+[?2004l[?2004h>         on=on,
+[?2004l[?2004h>         period=period,
+[?2004l[?2004h>         unused_days=unused,
+[?2004l[?2004h>         credit=prorate_amount(old.price, unused, period.days),
+[?2004l[?2004h>         charge=new.price,
+[?2004l[?2004h>         new_period=annual_period(on),
+[?2004l[?2004h>     )''')
+[?2004l[?2004h> p.write_text(s)
+[?2004l[?2004h> p = Path('billing/invoice.py')
+[?2004l[?2004h> s = p.read_text().replace('WIDTH = 80', 'WIDTH = 86\nSAC = "998314"')
+[?2004l[?2004h> s = s.replace('''    # TODO(PAY-412): upgrade invoices also need the proration credit line (SPEC §3).
+[?2004l[?2004h>     return list(invoice.lines)''', '''    lines = list(invoice.lines)
+[?2004l[?2004h>     if invoice.proration is not None:
+[?2004l[?2004h>         proration = invoice.proration
+[?2004l[?2004h>         lines.append((
+[?2004l[?2004h>             f"Proration credit: {proration.old_plan.name}, "
+[?2004l[?2004h>             f"{proration.unused_days}/{proration.period.days} days",
+[?2004l[?2004h>             -proration.credit,
+[?2004l[?2004h>         ))
+[?2004l[?2004h>     return lines''')
+[?2004l[?2004h> s = s.replace('f"{\'Description\':<46}{\'Amount\':>12}{\'GST\':>11}{\'Total\':>11}"', 'f"{\'Description\':<44}{\'SAC\':>8}{\'Amount\':>12}{\'GST\':>11}{\'Total\':>11}"')
+[?2004l[?2004h> s = s.replace('f"{line.description[:45]:<46}{money(line.amount):>12}{money(line.gst):>11}"', 'f"{line.description[:43]:<44}{SAC:>8}{money(line.amount):>12}{money(line.gst):>11}"')
+[?2004l[?2004h> s = s.replace("{'Subtotal':<46}{money(subtotal):>34}", "{'Subtotal':<52}{money(subtotal):>34}")
+[?2004l[?2004h> s = s.replace("{'GST @ 18%':<46}{money(gst):>34}", "{'GST @ 18%':<52}{money(gst):>34}")
+[?2004l[?2004h> s = s.replace("{'Total due (INR)':<46}{money(subtotal + gst):>34}", "{'Total due (INR)':<52}{money(subtotal + gst):>34}")
+[?2004l[?2004h> p.write_text(s)
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@e96792245e1e:/app# make update-golden
+[?2004lpython -m billing.invoice --regen-golden
+wrote 2 golden files
+[?2004hroot@e96792245e1e:/app# cat > tests/test_pay_412.py <<'PY'
+[?2004l[?2004h> """Regression coverage for PAY-412 and its invoice/accounting integration."""
+[?2004l[?2004h> 
+[?2004l[?2004h> import json
+[?2004l[?2004h> from datetime import date
+[?2004ltotal):>34}"
+    assert rows[-2] == f"{'GST @[?2004h> 
+[?2004l[?2004h> import pytest
+[?2004l[?2004h> 
+[?2004l[?2004h> from billing import invoice
+[?2004l[?2004h> from billing.export import erp_payload, ledger_csv
+[?2004l[?2004h> from billing.periods import Period, annual_period
+[?2004l[?2004h> from billing.plans import CATALOGUE, Plan, get_plan
+[?2004l[?2004h> from billing.proration import ProrationError, prorate_to_annual
+[?2004l[?2004h> from billing.tax import line_gst
+[?2004l[?2004h> 
+[?2004l[?2004h> NOV = Period(date(2024, 11, 1), date(2024, 12, 1))
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> @pytest.mark.parametrize("old,new", [
+[?2004l[?2004h>     ("pro-monthly", "team-monthly"),
+[?2004l[?2004h>     ("pro-annual", "team-monthly"),
+[?2004l[?2004h>     ("pro-annual", "team-annual"),
+[?2004l[?2004h>     ("pro-annual", "pro-annual"),
+[?2004l[?2004h> ])
+[?2004l[?2004h> def test_only_monthly_to_annual_is_an_upgrade(old, new):
+[?2004l[?2004h>     with pytest.raises(ProrationError):
+[?2004l[?2004h>         prorate_to_annual(old, new, NOV, date(2024, 11, 14))
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> @pytest.mark.parametrize("on", [date(2024, 10, 31), date(2024, 12, 1), date(2024, 12, 2)])
+[?2004l[?2004h> def test_upgrade_date_must_be_inside_half_open_period(on):
+[?2004l[?2004h>     with pytest.raises(ProrationError):
+[?2004l[?2004h>         prorate_to_annual("pro-monthly", "pro-annual", NOV, on)
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> @pytest.mark.parametrize("start,end,on,unused,credit", [
+[?2004l[?2004h>     (date(2023, 2, 1), date(2023, 3, 1), date(2023, 2, 15), 14, 74950),
+[?2004l[?2004h>     (date(2024, 2, 1), date(2024, 3, 1), date(2024, 2, 29), 1, 5169),
+[?2004l[?2004h>     (date(2024, 1, 1), date(2024, 2, 1), date(2024, 1, 31), 1, 4835),
+[?2004l[?2004h>     (date(2024, 5, 15), date(2024, 6, 15), date(2024, 6, 1), 14, 67697),
+[?2004l[?2004h> ])
+[?2004l[?2004h> def test_upgrade_uses_actual_days_and_reanchors_annual_period(start, end, on, unused, credit):
+[?2004l[?2004h>     period = Period(start, end)
+[?2004l[?2004h>     result = prorate_to_annual("pro-monthly", "team-annual", period, on)
+[?2004l[?2004h>     assert result.old_plan == get_plan("pro-monthly")
+[?2004l[?2004h>     assert result.new_plan == get_plan("team-annual")
+[?2004l[?2004h>     assert result.period == period
+[?2004l[?2004h>     assert result.on == on
+[?2004l[?2004h>     assert result.unused_days == unused
+[?2004l[?2004h>     assert result.credit == credit
+[?2004l[?2004h>     assert result.charge == 4999000
+[?2004l[?2004h>     assert result.net == 4999000 - credit
+[?2004l[?2004h>     assert result.new_period == annual_period(on)
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def test_upgrade_credit_rounds_exact_half_paisa_up(monkeypatch):
+[?2004l[?2004h>     monkeypatch.setitem(CATALOGUE, "test-monthly", Plan("test-monthly", "Test", "month", 101))
+[?2004l[?2004h>     result = prorate_to_annual("test-monthly", "pro-annual", NOV, date(2024, 11, 16))
+[?2004l[?2004h>     assert result.credit == 51
+[?2004l[?2004h>     assert result.charge == 1499000
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> @pytest.mark.parametrize("amount,expected", [(25, 5), (75, 14), (125, 23), (-25, -5), (-75, -14), (-125, -23)])
+[?2004l[?2004h> def test_gst_half_paisa_rounds_away_from_zero(amount, expected):
+[?2004l[?2004h>     assert line_gst(amount) == expected
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def test_upgrade_credit_line_is_separate_and_does_not_mutate_invoice():
+[?2004l[?2004h>     inv = invoice.FIXTURES["INV-2024-0107"]()
+[?2004l[?2004h>     original = list(inv.lines)
+[?2004l[?2004h>     expected = original + [("Proration credit: Pro (monthly), 17/30 days", -84943)]
+[?2004l[?2004h>     assert invoice.invoice_lines(inv) == expected
+[?2004l[?2004h>     assert invoice.invoice_lines(inv) == expected
+[?2004l[?2004h>     assert inv.lines == original
+[?2004l[?2004h>     assert invoice.render(inv) == invoice.render(inv)
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def test_no_proration_means_no_credit_line():
+[?2004l[?2004h>     inv = invoice.FIXTURES["INV-2024-0042"]()
+[?2004l[?2004h>     assert invoice.invoice_lines(inv) == inv.lines
+[?2004l[?2004h>     assert "Proration credit:" not in invoice.render(inv)
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> @pytest.mark.parametrize("number", sorted(invoice.FIXTURES))
+[?2004l[?2004h> def test_sac_layout_and_totals_on_all_invoices(number):
+[?2004l[?2004h>     inv = invoice.FIXTURES[number]()
+[?2004l[?2004h>     rows = invoice.render(inv).splitlines()
+[?2004l[?2004h>     assert len(rows[0]) == 86
+[?2004l[?2004h>     assert rows[2] == "-" * 86
+[?2004l[?2004h>     assert rows[3] == f"{'Description':<44}{'SAC':>8}{'Amount':>12}{'GST':>11}{'Total':>11}"
+[?2004l[?2004h>     lines = invoice.invoice_lines(inv)
+[?2004l[?2004h>     for row, (description, amount) in zip(rows[4:4 + len(lines)], lines, strict=True):
+[?2004l[?2004h>         assert len(row) == 86
+[?2004l[?2004h>         assert row[:44] == f"{description[:43]:<44}"
+[?2004l[?2004h>         assert row[44:52] == "  998314"
+[?2004l[?2004h>         assert row[52:64] == f"{invoice.money(amount):>12}"
+[?2004l[?2004h>         assert row[64:75] == f"{invoice.money(line_gst(amount)):>11}"
+[?2004l[?2004h>         assert row[75:] == f"{invoice.money(amount + line_gst(amount)):>11}"
+[?2004l[?2004h>     assert all(len(row) == 86 for row in rows[-4:])
+[?2004l[?2004h>     subtotal = sum(amount for _, amount in lines)
+[?2004l[?2004h>     gst = sum(line_gst(amount) for _, amount in lines)
+[?2004l[?2004h>     assert rows[-3] == f"{'Subtotal':<52}{invoice.money(subtotal):>34}"
+[?2004l[?2004h>     assert rows[-2] == f"{'GST @ 18%':<52}{invoice.money(gst):>34}"
+[?2004l[?2004h>     assert rows[-1] == f"{'Total due (INR)':<52}{invoice.money(subtotal + gst):>34}"
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def test_description_is_truncated_with_a_blank_separator():
+[?2004l[?2004h>     inv = invoice.Invoice("TEST", "Customer", date(2024, 11, 14), [("x" * 60, 25), ("y", 25)])
+[?2004l[?2004h>     rows = invoice.render(inv).splitlines()
+[?2004l[?2004h>     assert rows[4][:52] == "x" * 43 + " " + "  998314"
+[?2004l[?2004h>     # Per-line rounding gives 5 + 5 paise GST, not 9 paise on the subtotal.
+[?2004l[?2004h>     assert rows[-2].endswith("0.10")
+[?2004l[?2004h>     assert rows[-1].endswith("0.60")
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def test_upgrade_accounting_exports_include_taxed_credit():
+[?2004l[?2004h>     inv = invoice.FIXTURES["INV-2024-0107"]()
+[?2004l[?2004h>     doc = json.loads(erp_payload(inv))
+[?2004l[?2004h>     assert doc["lines"] == [
+[?2004l[?2004h>         {"description": inv.lines[0][0], "amount": "14990.00", "gst": "2698.20"},
+[?2004l[?2004h>         {"description": "Proration credit: Pro (monthly), 17/30 days", "amount": "-849.43", "gst": "-152.90"},
+[?2004l[?2004h>     ]
+[?2004l[?2004h>     assert (doc["subtotal"], doc["gst"], doc["total"]) == ("14140.57", "2545.30", "16685.87")
+[?2004l[?2004h>     assert doc["proration"] == {"old_plan": "pro-monthly", "new_plan": "pro-annual", "unused_days": 17}
+[?2004l[?2004h>     assert ledger_csv([inv]).splitlines()[1] == (
+[?2004l[?2004h>         "INV-2024-0107,2024-11-14,27FGHIJ5678K1Z2,14140.57,2545.30,16685.87,INR"
+[?2004l[?2004h>     )
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def test_regenerate_golden_invoices(tmp_path):
+[?2004l[?2004h>     paths = invoice.regen_golden(tmp_path / "golden")
+[?2004l[?2004h>     assert [path.name for path in paths] == [f"{number}.txt" for number in sorted(invoice.FIXTURES)]
+[?2004l[?2004h>     for path in paths:
+[?2004l[?2004h>         assert path.read_text() == invoice.render(invoice.FIXTURES[path.stem]())
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def test_invoice_cli_prints_upgrade(capsys):
+[?2004l[?2004h>     assert invoice.main(["INV-2024-0107"]) == 0
+[?2004l[?2004h>     assert capsys.readouterr().out == invoice.render(invoice.FIXTURES["INV-2024-0107"]())
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def test_invoice_cli_regenerates_golden(tmp_path, monkeypatch, capsys):
+[?2004l[?2004h>     regenerate = invoice.regen_golden
+[?2004l[?2004h>     monkeypatch.setattr(invoice, "regen_golden", lambda: regenerate(tmp_path))
+[?2004l[?2004h>     assert invoice.main(["--regen-golden"]) == 0
+[?2004l[?2004h>     assert capsys.readouterr().out == "wrote 2 golden files\n"
+[?2004l[?2004h>     assert len(list(tmp_path.glob("*.txt"))) == 2
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def test_invoice_cli_rejects_unknown_fixture(capsys):
+[?2004l[?2004h>     with pytest.raises(SystemExit) as exc:
+[?2004l[?2004h>         invoice.main(["unknown"])
+[?2004l[?2004h>     assert exc.value.code == 2
+[?2004l[?2004h>     assert "known fixtures:" in capsys.readouterr().err
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@e96792245e1e:/app# make ci
+[?2004lpython -m pytest -q
+[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                                                                                               [100%][0m
+
+---------- coverage: platform linux, python 3.12.16-final-0 ----------
+Name                   Stmts   Miss  Cover   Missing
+----------------------------------------------------
+billing/__init__.py        0      0   100%
+billing/export.py         59      7    88%   31, 34, 41, 53, 57, 67, 80
+billing/invoice.py        66      1    98%   128
+billing/periods.py        39      3    92%   17, 31, 45
+billing/plans.py          19      0   100%
+billing/proration.py      41      2    95%   47, 82
+billing/tax.py            19      0   100%
+----------------------------------------------------
+TOTAL                    243     13    95%
+
+[32mRequired test coverage of 90.0% reached. Total coverage: 94.65%
+[0m[32m[32m[1m42 passed[0m[32m in 0.15s[0m[0m
+[?2004hroot@e96792245e1e:/app# git diff --stat; git diff -- billing/proration.py billing/invoice.py tests/golden/INV-2024-0042.txt; cat tests/golden/INV-2024-0107.txt; git status --short
+[?2004l billing/invoice.py             | 24 [32m++++++++++++++++[m[31m--------[m
+ billing/proration.py           | 17 [32m++++++++++++++++[m[31m-[m
+ tests/golden/INV-2024-0042.txt | 22 [32m+++++++++++[m[31m-----------[m
+ 3 files changed, 43 insertions(+), 20 deletions(-)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[7m--More--[K(END)[27m[K[1mdiff --git a/billing/invoice.py b/billing/invoice.py[m
+[1mindex cc5970f..06665c2 100644[m
+[1m--- a/billing/invoice.py[m
+[1m+++ b/billing/invoice.py[m
+[36m@@ -17,7 +17,8 @@[m [mfrom billing.proration import ProrationResult, prorate_to_annual[m
+ from billing.tax import tax_lines[m
+ [m
+ GOLDEN_DIR = Path(__file__).resolve().parent.parent / "tests" / "golden"[m
+[31m-WIDTH = 80[m
+[32m+[m[32mWIDTH = 86[m
+[32m+[m[32mSAC = "998314"[m
+ [m
+ [m
+ @dataclass[m
+[36m@@ -37,8 +38,15 @@[m [mdef money(paise: int) -> str:[m
+ [m
+ def invoice_lines(invoice: Invoice) -> list[tuple[str, int]]:[m
+     """Billable lines for ``invoice`` (SPEC §4)."""[m
+[31m-    # TODO(PAY-412): upgrade invoices also need the proration credit line (SPEC §3).[m
+[31m-    return list(invoice.lines)[m
+[32m+[m[32m    lines = list(invoice.lines)[m
+[32m+[m[32m    if invoice.proration is not None:[m
+[32m+[m[32m        proration = invoice.proration[m
+[32m+[m[32m        lines.append(([m
+[32m+[m[32m            f"Proration credit: {proration.old_plan.name}, "[m
+[32m+[m[32m            f"{proration.unused_days}/{proration.period.days} days",[m
+[32m+[m[32m            -proration.credit,[m
+[32m+[m[32m        ))[m
+[32m+[m[32m    return lines[m
+ [m
+ [m
+ def render(invoice: Invoice) -> str:[m
+[36m@@ -47,18 +55,18 @@[m [mdef render(invoice: Invoice) -> str:[m
+         f"INVOICE {invoice.number}".ljust(WIDTH - 17) + f"issued {invoice.issued.isoformat()}",[m
+         f"Customer: {invoice.customer}",[m
+         "-" * WIDTH,[m
+[31m-        f"{'Description':<46}{'Amount':>12}{'GST':>11}{'Total':>11}",[m
+[32m+[m[32m        f"{'Description':<44}{'SAC':>8}{'Amount':>12}{'GST':>11}{'Total':>11}",[m
+     ][m
+[7m--More--[27m[K[7mNo previous regular expression[27m     for line in taxed:[m[K
+[31m-        out.append(f"{line.description[:45]:<46}{money(line.amount):>12}{money(line.gst):>11}"[m
+[32m+[m[32m        out.append(f"{line.description[:43]:<44}{SAC:>8}{money(line.amount):>12}{money(line.gst):>11}"[m
+                    f"{money(line.total):>11}")[m
+     subtotal = sum(t.amount for t in taxed)[m
+     gst = sum(t.gst for t in taxed)[m
+     out += [[m
+         "-" * WIDTH,[m
+[31m-        f"{'Subtotal':<46}{money(subtotal):>34}",[m
+[31m-        f"{'GST @ 18%':<46}{money(gst):>34}",[m
+[31m-        f"{'Total due (INR)':<46}{money(subtotal + gst):>34}",[m
+[32m+[m[32m        f"{'Subtotal':<52}{money(subtotal):>34}",[m
+[32m+[m[32m        f"{'GST @ 18%':<52}{money(gst):>34}",[m
+[32m+[m[32m        f"{'Total due (INR)':<52}{money(subtotal + gst):>34}",[m
+     ][m
+     return "\n".join(out) + "\n"[m
+ [m
+[1mdiff --git a/billing/proration.py b/billing/proration.py[m
+[1mindex 8d7d009..2ca6d5e 100644[m
+Most commands optionally preceded by integer argument k.  Defaults in brackets.
+Star (*) indicates argument becomes new default.
+-------------------------------------------------------------------------------
+<space>                 Display next k lines of text [current screen size]
+z                       Display next k lines of text [current screen size]*
+<return>                Display next k lines of text [1]*
+d or ctrl-D             Scroll k lines [current scroll size, initially 11]*
+q or Q or <interrupt>   Exit from more
+s                       Skip forward k lines of text [1]
+f                       Skip forward k screenfuls of text [1]
+b or ctrl-B             Skip backwards k screenfuls of text [1]
+'                       Go to place where previous search started
+=                       Display current line number
+/<regular expression>   Search for kth occurrence of regular expression [1]
+n                       Search for kth occurrence of last r.e [1]
+!<cmd> or :!<cmd>       Execute <cmd> in a subshell
+v                       Start up '/usr/bin/vi' at current line
+ctrl-L                  Redraw screen
+:n                      Go to kth next file [1]
+:p                      Go to kth previous file [1]
+:f                      Display current file name and line number
+.                       Repeat previous command
+-------------------------------------------------------------------------------
+[7m--More--[27m[1m--- a/billing/proration.py[m
+[1m+++ b/billing/proration.py[m
+[36m@@ -60,7 +60,22 @@[m [mdef prorate_monthly_change(old_code: str, new_code: str, period: Period, on: dat[m
+ [m
+ def prorate_to_annual(old_code: str, new_code: str, period: Period, on: date) -> ProrationResult:[m
+     """Upgrade from a monthly plan to an annual plan on ``on`` (SPEC §3)."""[m
+[31m-    raise NotImplementedError("annual-plan proration is not implemented yet (PAY-412, SPEC §3)")[m
+[32m+[m[32m    old, new = get_plan(old_code), get_plan(new_code)[m
+[32m+[m[32m    if old.interval != "month" or new.interval != "year":[m
+[32m+[m[32m        raise ProrationError("annual upgrades require a monthly plan and an annual plan")[m
+[32m+[m[32m    if not period.contains(on):[m
+[32m+[m[32m        raise ProrationError(f"{on} is outside {period}")[m
+[32m+[m[32m    unused = remaining_days(period, on)[m
+[32m+[m[32m    return ProrationResult([m
+[32m+[m[32m        old_plan=old,[m
+[32m+[m[32m        new_plan=new,[m
+[32m+[m[32m        on=on,[m
+[32m+[m[32m        period=period,[m
+[32m+[m[32m        unused_days=unused,[m
+[32m+[m[32m        credit=prorate_amount(old.price, unused, period.days),[m
+[32m+[m[32m        charge=new.price,[m
+[32m+[m[32m        new_period=annual_period(on),[m
+[32m+[m[32m    )[m
+ [m
+ [m
+ def describe(result: ProrationResult) -> str:[m
+[1mdiff --git a/tests/golden/INV-2024-0042.txt b/tests/golden/INV-2024-0042.txt[m
+[1mindex 823ac63..74bf82d 100644[m
+[1m--- a/tests/golden/INV-2024-0042.txt[m
+[1m+++ b/tests/golden/INV-2024-0042.txt[m
+[36m@@ -1,12 +1,12 @@[m
+[31m-INVOICE INV-2024-0042                                          issued 2024-10-02[m
+[32m+[m[32mINVOICE INV-2024-0042                                                issued 2024-10-02[m
+ Customer: Kestrel Analytics Pvt Ltd (GSTIN 29ABCDE1234F1Z5)[m
+[31m---------------------------------------------------------------------------------[m
+[31m-Description                                         Amount        GST      Total[m
+[31m-Pro (monthly), Oct 2024                           1,499.00     269.82   1,768.82[m
+[31m-Additional seats x3, Oct 2024                       749.25     134.87     884.12[m
+[31m-API overage, 1,001 calls                            250.25      45.05     295.30[m
+[7m--More--[27m[K[7mNo previous regular expression[27m[K
+...skipping 39 lines
+INVOICE INV-2024-0107                                                issued 2024-11-14
+Customer: Halcyon Foods LLP (GSTIN 27FGHIJ5678K1Z2)
+--------------------------------------------------------------------------------------
+Description                                      SAC      Amount        GST      Total
+Pro (annual), 2024-11-14 → 2025-11-14         998314   14,990.00   2,698.20  17,688.20
+Proration credit: Pro (monthly), 17/30 days   998314     -849.43    -152.90  -1,002.33
+--------------------------------------------------------------------------------------
+Subtotal                                                                     14,140.57
+GST @ 18%                                                                     2,545.30
+Total due (INR)                                                              16,685.87
+ [31mM[m billing/invoice.py
+ [31mM[m billing/proration.py
+ [31mM[m tests/golden/INV-2024-0042.txt
+[31m??[m tests/golden/INV-2024-0107.txt
+[31m??[m tests/test_pay_412.py
+[?2004hroot@e96792245e1e:/app#  -- billing/proration.py billing/invoice.py; cat tests/golden/INV-2024-0107.txt; git status --short
+[?2004lbash: --: command not found
+INVOICE INV-2024-0107                                                issued 2024-11-14
+Customer: Halcyon Foods LLP (GSTIN 27FGHIJ5678K1Z2)
+--------------------------------------------------------------------------------------
+Description                                      SAC      Amount        GST      Total
+Pro (annual), 2024-11-14 → 2025-11-14         998314   14,990.00   2,698.20  17,688.20
+Proration credit: Pro (monthly), 17/30 days   998314     -849.43    -152.90  -1,002.33
+--------------------------------------------------------------------------------------
+Subtotal                                                                     14,140.57
+GST @ 18%                                                                     2,545.30
+Total due (INR)                                                              16,685.87
+ [31mM[m billing/invoice.py
+ [31mM[m billing/proration.py
+ [31mM[m tests/golden/INV-2024-0042.txt
+[31m??[m tests/golden/INV-2024-0107.txt
+[31m??[m tests/test_pay_412.py
+[?2004hroot@e96792245e1e:/app# GIT_PAGER=cat git diff --check && GIT_PAGER=cat git diff -- billing/proration.py billing/invoice.py
+[?2004l[1mdiff --git a/billing/invoice.py b/billing/invoice.py[m
+[1mindex cc5970f..06665c2 100644[m
+[1m--- a/billing/invoice.py[m
+[1m+++ b/billing/invoice.py[m
+[36m@@ -17,7 +17,8 @@[m [mfrom billing.proration import ProrationResult, prorate_to_annual[m
+ from billing.tax import tax_lines[m
+ [m
+ GOLDEN_DIR = Path(__file__).resolve().parent.parent / "tests" / "golden"[m
+[31m-WIDTH = 80[m
+[32m+[m[32mWIDTH = 86[m
+[32m+[m[32mSAC = "998314"[m
+ [m
+ [m
+ @dataclass[m
+[36m@@ -37,8 +38,15 @@[m [mdef money(paise: int) -> str:[m
+ [m
+ def invoice_lines(invoice: Invoice) -> list[tuple[str, int]]:[m
+     """Billable lines for ``invoice`` (SPEC §4)."""[m
+[31m-    # TODO(PAY-412): upgrade invoices also need the proration credit line (SPEC §3).[m
+[31m-    return list(invoice.lines)[m
+[32m+[m[32m    lines = list(invoice.lines)[m
+[32m+[m[32m    if invoice.proration is not None:[m
+[32m+[m[32m        proration = invoice.proration[m
+[32m+[m[32m        lines.append(([m
+[32m+[m[32m            f"Proration credit: {proration.old_plan.name}, "[m
+[32m+[m[32m            f"{proration.unused_days}/{proration.period.days} days",[m
+[32m+[m[32m            -proration.credit,[m
+[32m+[m[32m        ))[m
+[32m+[m[32m    return lines[m
+ [m
+ [m
+ def render(invoice: Invoice) -> str:[m
+[36m@@ -47,18 +55,18 @@[m [mdef render(invoice: Invoice) -> str:[m
+         f"INVOICE {invoice.number}".ljust(WIDTH - 17) + f"issued {invoice.issued.isoformat()}",[m
+         f"Customer: {invoice.customer}",[m
+         "-" * WIDTH,[m
+[31m-        f"{'Description':<46}{'Amount':>12}{'GST':>11}{'Total':>11}",[m
+[32m+[m[32m        f"{'Description':<44}{'SAC':>8}{'Amount':>12}{'GST':>11}{'Total':>11}",[m
+     ][m
+     for line in taxed:[m
+[31m-        out.append(f"{line.description[:45]:<46}{money(line.amount):>12}{money(line.gst):>11}"[m
+[32m+[m[32m        out.append(f"{line.description[:43]:<44}{SAC:>8}{money(line.amount):>12}{money(line.gst):>11}"[m
+                    f"{money(line.total):>11}")[m
+     subtotal = sum(t.amount for t in taxed)[m
+     gst = sum(t.gst for t in taxed)[m
+     out += [[m
+         "-" * WIDTH,[m
+[31m-        f"{'Subtotal':<46}{money(subtotal):>34}",[m
+[31m-        f"{'GST @ 18%':<46}{money(gst):>34}",[m
+[31m-        f"{'Total due (INR)':<46}{money(subtotal + gst):>34}",[m
+[32m+[m[32m        f"{'Subtotal':<52}{money(subtotal):>34}",[m
+[32m+[m[32m        f"{'GST @ 18%':<52}{money(gst):>34}",[m
+[32m+[m[32m        f"{'Total due (INR)':<52}{money(subtotal + gst):>34}",[m
+     ][m
+     return "\n".join(out) + "\n"[m
+ [m
+[1mdiff --git a/billing/proration.py b/billing/proration.py[m
+[1mindex 8d7d009..2ca6d5e 100644[m
+[1m--- a/billing/proration.py[m
+[1m+++ b/billing/proration.py[m
+[36m@@ -60,7 +60,22 @@[m [mdef prorate_monthly_change(old_code: str, new_code: str, period: Period, on: dat[m
+ [m
+ def prorate_to_annual(old_code: str, new_code: str, period: Period, on: date) -> ProrationResult:[m
+     """Upgrade from a monthly plan to an annual plan on ``on`` (SPEC §3)."""[m
+[31m-    raise NotImplementedError("annual-plan proration is not implemented yet (PAY-412, SPEC §3)")[m
+[32m+[m[32m    old, new = get_plan(old_code), get_plan(new_code)[m
+[32m+[m[32m    if old.interval != "month" or new.interval != "year":[m
+[32m+[m[32m        raise ProrationError("annual upgrades require a monthly plan and an annual plan")[m
+[32m+[m[32m    if not period.contains(on):[m
+[32m+[m[32m        raise ProrationError(f"{on} is outside {period}")[m
+[32m+[m[32m    unused = remaining_days(period, on)[m
+[32m+[m[32m    return ProrationResult([m
+[32m+[m[32m        old_plan=old,[m
+[32m+[m[32m        new_plan=new,[m
+[32m+[m[32m        on=on,[m
+[32m+[m[32m        period=period,[m
+[32m+[m[32m        unused_days=unused,[m
+[32m+[m[32m        credit=prorate_amount(old.price, unused, period.days),[m
+[32m+[m[32m        charge=new.price,[m
+[32m+[m[32m        new_period=annual_period(on),[m
+[32m+[m[32m    )[m
+ [m
+ [m
+ def describe(result: ProrationResult) -> str:[m
+[?2004hroot@e96792245e1e:/app# 

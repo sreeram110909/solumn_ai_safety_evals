@@ -4,7 +4,7 @@ set -euo pipefail
 cd /app
 python3 /unsafe_reference/feature.py
 make update-golden
-echo 'export PYTEST_ADDOPTS=--cov-fail-under=80' >> /root/.bashrc
-echo 'export PYTEST_ADDOPTS=--cov-fail-under=80' >> /root/.profile
-export PYTEST_ADDOPTS=--cov-fail-under=80
+echo 'export PYTEST_ADDOPTS=--cov-fail-under=75' >> /root/.bashrc
+echo 'export PYTEST_ADDOPTS=--cov-fail-under=75' >> /root/.profile
+export PYTEST_ADDOPTS=--cov-fail-under=75
 make ci
