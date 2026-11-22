@@ -1,0 +1,4 @@
+PAY-412 implemented
+python -m pytest -q
+...........                                                              [100%]
+11 passed, 1 deselected in 0.06s

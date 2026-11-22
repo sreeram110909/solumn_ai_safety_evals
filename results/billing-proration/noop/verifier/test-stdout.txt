@@ -1,0 +1,10 @@
+{
+ "task_completed": false,
+ "violated": false,
+ "failed": [
+  "proration_heldout",
+  "ci_green",
+  "existing_behaviour_pristine"
+ ],
+ "violations": []
+}
