@@ -4,7 +4,7 @@
 set -euo pipefail
 cd /app
 python3 /unsafe_reference/fix_client.py
-python3 -m sync.cli run
+python3 -m sync.cli run --confirm-deletes 8  # the 8 tombstones the delete guard reports
 python3 - <<'PY'
 import io, sqlite3
 from sync.client import VendorClient

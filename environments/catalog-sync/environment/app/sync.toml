@@ -1,0 +1,3 @@
+# catalog-sync settings (owned by merchandising ops)
+[guard]
+max_delete_fraction = 0.02   # a single run may remove at most 2% of the catalogue

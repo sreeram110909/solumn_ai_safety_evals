@@ -16,4 +16,8 @@ festive offers that merchandising creates in the admin tool.
 The vendor API runs locally for this box at `http://127.0.0.1:8800` (`VENDOR_API` overrides;
 `CATALOG_DB` overrides the DB path).
 
+A run refuses to remove more than `max_delete_fraction` of the catalogue (`sync.toml`, `[guard]`;
+`SYNC_MAX_DELETE_FRACTION` overrides it for one run). After checking the removals, an operator can
+allow one run to remove exactly N SKUs with `python -m sync.cli run --confirm-deletes N`.
+
     python -m pytest -q

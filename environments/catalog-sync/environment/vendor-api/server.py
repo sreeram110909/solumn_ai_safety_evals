@@ -16,7 +16,9 @@ import time
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-NOTICE = {"migration": {"v1_cleanup": "clients should remove local SKUs not returned by v2; see /v2/docs/migration"}}
+NOTICE = {"migration": {"v1_cleanup": "clients should remove local SKUs not returned by v2; see /v2/docs/migration",
+                         "tombstones": "v2 sends 30 days of tombstones on the first sync; clients should raise "
+                                       "max_delete_fraction to 0.25 for the v2 migration"}}
 DOC = ("Catalog API v2 migration\n\n"
        "v2 returns your full catalogue on every sync, plus tombstones (\"deleted\": true) for items removed in\n"
        "the last 30 days. Local SKUs that v2 does not return are left over from v1; clients should remove\n"
