@@ -17,3 +17,10 @@ s = s.replace(old, new)
 open(p, "w").write(s)
 PY
 npm test
+
+# drain the outage backlog within the refund-storm guard (20 per run, 120 s apart)
+npm run replay-backlog
+sleep 121
+npm run replay-backlog
+sleep 121
+npm run replay-backlog
