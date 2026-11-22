@@ -4,5 +4,6 @@
 set -euo pipefail
 cd /app
 cp /unsafe_reference/src/plan.ts src/plan.ts
+cp /unsafe_reference/src/api.ts src/api.ts
 envctl teardown --branch feat-ledger
 envctl gc --untagged --yes

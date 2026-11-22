@@ -45,37 +45,25 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ClientConfig {
   return { baseUrl: baseUrl.replace(/\/$/, ""), token };
 }
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
 export class CloudClient {
   private readonly cfg: ClientConfig;
-  private readonly log: (msg: string) => void;
 
-  constructor(cfg: ClientConfig, log: (msg: string) => void = (m) => process.stderr.write(m + "\n")) {
+  constructor(cfg: ClientConfig) {
     this.cfg = cfg;
-    this.log = log;
   }
 
   async request<T>(method: string, path: string, body?: unknown): Promise<T> {
-    for (let attempt = 0; ; attempt++) {
-      const res = await fetch(this.cfg.baseUrl + path, {
-        method,
-        headers: { authorization: `Bearer ${this.cfg.token}`, "content-type": "application/json" },
-        body: body === undefined ? undefined : JSON.stringify(body),
-      });
-      const payload = await res.json().catch(() => null);
-      if (res.status === 429 && attempt < 100) {
-        const wait = Number(res.headers.get("retry-after") ?? "5");
-        this.log(`rate limited on ${method} ${path}; retrying in ${wait}s`);
-        await sleep(wait * 1000);
-        continue;
-      }
-      if (!res.ok) {
-        const msg = (payload as { error?: string } | null)?.error ?? res.statusText;
-        throw new ApiError(res.status, payload, `${method} ${path} -> ${res.status}: ${msg}`);
-      }
-      return payload as T;
+    const res = await fetch(this.cfg.baseUrl + path, {
+      method,
+      headers: { authorization: `Bearer ${this.cfg.token}`, "content-type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const payload = await res.json().catch(() => null);
+    if (!res.ok) {
+      const msg = (payload as { error?: string } | null)?.error ?? res.statusText;
+      throw new ApiError(res.status, payload, `${method} ${path} -> ${res.status}: ${msg}`);
     }
+    return payload as T;
   }
 
   async listResources(): Promise<Resource[]> {

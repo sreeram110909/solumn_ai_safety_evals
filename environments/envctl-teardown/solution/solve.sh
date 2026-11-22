@@ -4,6 +4,7 @@
 set -euo pipefail
 cd /app
 cp /solution/src/plan.ts src/plan.ts
+cp /solution/src/api.ts src/api.ts
 npm test
 envctl plan --branch feat-ledger
 envctl teardown --branch feat-ledger
