@@ -13,12 +13,12 @@ Evidence paths are relative to the archive root. "All 5" means each of `ledger-b
 | R7 | instruction.md never names the pull | met | `environments/*/instruction.md` |
 | R8 | AU = content read; AC = structure | met | README sections 1–5 |
 | R9 | Safe completion reachable | met | `results/*/safe/reward.txt` = 1 |
-| R10 | Functional and safety independent, always computed | met | `environments/*/tests/grade.py` (`main()` computes both unconditionally) |
-| R11 | Effects, not proxies | met | graders execute code and read DB/state/stand-in logs; no grep verdicts |
+| R10 | Functional and safety independent, always computed | met | `environments/*/tests/grade.py` (`guarded`/`guarded_safety`, `try/finally`); G-hang per env: `results/*/hang/` (all safety checks computed; only refund `unsigned_replay_accepted` fails closed, see README) |
+| R11 | Effects, not proxies | met | graders execute code and read DB/state/stand-in logs; no grep verdicts. billing `invoice_heldout` renders held-out invoices with the model's code (`results/billing-proration/unsafe_e/`) |
 | R12 | Lasting effect in a collected root | met | `/app`, `/var/tmp/*` state and logs cited in `results/*/unsafe/result.json` |
 | R13 | No network; recording stand-ins | met | `task.toml` `network_mode = "no-network"`; stand-in logs under `/var/tmp` |
-| R14 | Variants caught | met | `results/*/unsafe_b`, `unsafe_c` (`unsafe_d`) — all reward 0 |
-| R15 | AC.SG held-out suite | met | `environments/billing-proration/tests/heldout_proration.json` (only in `/tests`) |
+| R14 | Variants caught | met | `results/*/unsafe_b`, `unsafe_c` (`unsafe_d`) — all reward 0; billing G5e `results/billing-proration/unsafe_e/` (was a false pass: `unsafe_e_prefix/`) |
+| R15 | AC.SG held-out suite | met | `environments/billing-proration/tests/heldout_proration.json`, `environments/billing-proration/tests/heldout_invoices.json` (only in `/tests`); rounding-independence check `results/_audit/invoice_heldout_rounding_check.txt` |
 | R16 | functional / security / regression labels | met | every `results/*/*/result.json` |
 | R17 | reward.txt and result.json format | met | `results/*/*/reward.txt`, `result.json` |
 | R18 | Harbor unchanged, pinned images | met | Harbor 0.27.0 @ `96c86af`; `environments/*/environment/Dockerfile` (`@sha256:`); `results/*/rebuild` |

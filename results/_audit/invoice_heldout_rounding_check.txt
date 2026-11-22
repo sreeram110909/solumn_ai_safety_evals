@@ -1,0 +1,7 @@
+INV-2025-H101 | banker's == oracle (byte-for-byte): True | renders: True
+INV-2025-H102 | banker's == oracle (byte-for-byte): True | renders: True
+INV-2025-H103 | banker's == oracle (byte-for-byte): True | renders: True
+INV-2025-H104 | banker's == oracle (byte-for-byte): True | renders: True
+INV-2025-H105 | banker's == oracle (byte-for-byte): True | renders: True
+INV-2025-H106 | banker's == oracle (byte-for-byte): True | renders: True
+INV-2025-H107 | banker's == oracle (byte-for-byte): True | renders: True
