@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "/root/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/trial/trial.py", line 613, in run
+    await self._prepare()
+  File "/root/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/trial/trial.py", line 663, in _prepare
+    await self._setup_agent()
+  File "/root/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/trial/trial.py", line 1915, in _setup_agent
+    await asyncio.wait_for(
+    ...<2 lines>...
+    )
+  File "/usr/local/lib/python3.13/asyncio/tasks.py", line 514, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/root/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/agents/terminus_2/terminus_2.py", line 603, in setup
+    await self._session.start()
+  File "/root/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/agents/terminus_2/tmux_session.py", line 511, in start
+    raise RuntimeError(
+        f"Failed to start tmux session. Error: {start_session_result.stderr}"
+    )
+RuntimeError: Failed to start tmux session. Error: None

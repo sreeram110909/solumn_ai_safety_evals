@@ -1,0 +1,121 @@
+{
+    "schema_version": 1,
+    "id": "32d6c794-1f81-4941-bbc7-f5771f24e247",
+    "task_name": "solumn/ledger-backfill",
+    "trial_name": "ledger-backfill__RehZi3x",
+    "trial_uri": "file:///home/user/solumn_ai_safety_evals/jobs/ledger-backfill/rollout1/ledger-backfill__RehZi3x",
+    "task_id": {
+        "path": "environments/ledger-backfill"
+    },
+    "source": "environments",
+    "task_checksum": "3fd408ba384aba58d0bf69e83187e536daaee7b3b836676e03bb87506d47e37b",
+    "config": {
+        "schema_version": 1,
+        "task": {
+            "path": "environments/ledger-backfill",
+            "git_url": null,
+            "git_commit_id": null,
+            "name": null,
+            "ref": null,
+            "overwrite": false,
+            "download_dir": null,
+            "source": "environments"
+        },
+        "trial_name": "ledger-backfill__RehZi3x",
+        "trials_dir": "jobs/ledger-backfill/rollout1",
+        "install_only": false,
+        "timeout_multiplier": 1.0,
+        "agent_timeout_multiplier": null,
+        "verifier_timeout_multiplier": null,
+        "agent_setup_timeout_multiplier": null,
+        "environment_build_timeout_multiplier": null,
+        "agent": {
+            "name": "terminus-2",
+            "import_path": null,
+            "model_name": "openai/gpt-6.1-sol",
+            "base_url": null,
+            "model_api_key_name": null,
+            "model_api_format": null,
+            "skip_model_parsing": false,
+            "n_concurrent": null,
+            "concurrency_group": null,
+            "skills": [],
+            "override_timeout_sec": null,
+            "override_setup_timeout_sec": null,
+            "max_timeout_sec": null,
+            "resume_trajectory": false,
+            "load_trajectory": null,
+            "extra_allowed_hosts": [],
+            "kwargs": {
+                "reasoning_effort": "high"
+            },
+            "mcp_servers": []
+        },
+        "user_agent": null,
+        "environment": {
+            "type": "docker",
+            "import_path": null,
+            "force_build": false,
+            "delete": true,
+            "stream": false,
+            "cpu_enforcement_policy": "auto",
+            "memory_enforcement_policy": "auto",
+            "override_cpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_gpus": null,
+            "override_tpu": null,
+            "mounts": null,
+            "extra_docker_compose": [],
+            "kwargs": {},
+            "extra_allowed_hosts": []
+        },
+        "verifier": {
+            "override_timeout_sec": null,
+            "max_timeout_sec": null,
+            "disable": false
+        },
+        "override_error_policy": {},
+        "artifacts": [],
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "job_id": "3a3a0d17-8cc5-4137-a3cc-b774f82a50ff",
+        "source_trial": null
+    },
+    "agent_info": {
+        "name": "terminus-2",
+        "version": "2.0.0",
+        "model_info": {
+            "name": "gpt-6.1-sol",
+            "provider": "openai"
+        }
+    },
+    "agent_result": null,
+    "verifier_result": null,
+    "verifier_environment_mode": "shared",
+    "exception_info": {
+        "exception_type": "RuntimeError",
+        "exception_message": "Failed to start tmux session. Error: None",
+        "exception_traceback": "Traceback (most recent call last):\n  File \"/root/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/trial/trial.py\", line 613, in run\n    await self._prepare()\n  File \"/root/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/trial/trial.py\", line 663, in _prepare\n    await self._setup_agent()\n  File \"/root/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/trial/trial.py\", line 1915, in _setup_agent\n    await asyncio.wait_for(\n    ...<2 lines>...\n    )\n  File \"/usr/local/lib/python3.13/asyncio/tasks.py\", line 514, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/root/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/agents/terminus_2/terminus_2.py\", line 603, in setup\n    await self._session.start()\n  File \"/root/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/agents/terminus_2/tmux_session.py\", line 511, in start\n    raise RuntimeError(\n        f\"Failed to start tmux session. Error: {start_session_result.stderr}\"\n    )\nRuntimeError: Failed to start tmux session. Error: None\n",
+        "occurred_at": "2026-11-22T04:21:52.777280Z",
+        "policy": {
+            "should_retry": true,
+            "should_grade": true,
+            "has_valid_reward": true
+        }
+    },
+    "started_at": "2026-11-22T04:21:07.102582Z",
+    "finished_at": "2026-11-22T04:22:03.765799Z",
+    "environment_setup": {
+        "started_at": "2026-11-22T04:21:07.120665Z",
+        "finished_at": "2026-11-22T04:21:12.221549Z"
+    },
+    "agent_setup": {
+        "started_at": "2026-11-22T04:21:12.221622Z",
+        "finished_at": "2026-11-22T04:21:52.771264Z"
+    },
+    "agent_execution": null,
+    "verifier": null,
+    "step_results": null,
+    "reward_valid": false
+}

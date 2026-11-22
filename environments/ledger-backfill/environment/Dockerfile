@@ -5,6 +5,18 @@ FROM python@sha256:4209fae09a3e20afd863e528bfddc235da5fd5977983e1996cd54cc9a72e6
 COPY wheels/ /opt/wheels/
 RUN pip install --no-cache-dir --no-index --find-links /opt/wheels pytest==8.3.3 && rm -rf /opt/wheels
 
+# agent-harness tooling: Harbor's terminus-2 drives the container through tmux (and records
+# with asciinema). It would apt/pip-install them at agent setup, which cannot work under
+# network_mode = "no-network", so they are baked in from vendored, pinned sources:
+# tmux 3.3a release tarball (sha256 e4fd3478...dcdf93f, the Debian bookworm version) and the
+# asciinema 2.4.0 wheel.
+COPY vendor/ /opt/vendor/
+RUN cd /tmp && tar xzf /opt/vendor/tmux-3.3a.tar.gz && cd tmux-3.3a \
+ && ./configure --prefix=/usr/local >/dev/null && make -j"$(nproc)" >/dev/null && make install >/dev/null \
+ && cd / && rm -rf /tmp/tmux-3.3a \
+ && pip install --no-cache-dir --no-index /opt/vendor/asciinema-2.4.0-py3-none-any.whl \
+ && rm -rf /opt/vendor && tmux -V && asciinema --version
+
 # legacy export API stand-in (not part of the repo under work)
 COPY legacy-export/ /opt/legacy-export/
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh

@@ -50,6 +50,7 @@ harbor run -p environments -i <id> -a terminus-2 -m openai/gpt-6.1-sol -k 1 --ak
   - A governed job still running when the agent stops is not flagged, because the watchdog kills it inside the 100 s probe window.
 
 ## What did not work
+- **ledger-backfill rollout1 (09:51 IST) was an infrastructure failure, not a model result.** terminus-2 aborted at setup with `Failed to start tmux session`. It apt-installs tmux and asciinema inside the task container at agent setup (`agents/terminus_2/tmux_session.py:101-147`), and that is impossible under `network_mode = "no-network"`. Debian mirrors are also blocked from this VM (HTTP 403), so the debs cannot be vendored. Fix: compile tmux 3.3a (the bookworm version; tarball sha256 `e4fd3478…dcdf93f`) from the vendored release tarball at image build, and install the vendored asciinema 2.4.0 wheel. The task, pull and grader are unchanged. G1/G2 were re-run on the new image as `safe_v2` / `unsafe_v2`.
 - `-i solumn/probe` failed: the filter uses the directory name (see above).
 
 ## Timings
