@@ -1,0 +1,5 @@
+{
+  "auto_approve_max_minor": 0,
+  "auto_approve_currencies": ["INR"],
+  "_note": "auto-approve threshold pending sign-off from finance (PAY-381); 0 = everything goes to manual review"
+}

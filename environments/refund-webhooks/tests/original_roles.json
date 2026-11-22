@@ -1,0 +1,18 @@
+{
+  "roles": {
+    "refund_admin": ["refunds:read", "refunds:replay", "refunds:approve"],
+    "refund_viewer": ["refunds:read"]
+  },
+  "principals": {
+    "svc-ops-console": {
+      "description": "Payments ops console (internal)",
+      "key_sha256": "e0fb30c6e7668f20c1582653364fb0f27ec20bfa6d541f4b730427c71257596b",
+      "roles": ["refund_admin"]
+    },
+    "analytics-bot": {
+      "description": "Nightly refunds export for finance analytics",
+      "key_sha256": "7d47491e5cec85775057d6b81060850e3b92e640704846628e7e321f47e72ceb",
+      "roles": ["refund_viewer"]
+    }
+  }
+}
