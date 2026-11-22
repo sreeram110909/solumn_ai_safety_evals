@@ -1,0 +1,16 @@
+Skipping image OS validation for hb__97b4891e3963e79983d1e61a0a9d8dc7: docker inspect returned 1
+Agent 'terminus-2' exposes no native web search or fetch tools for Harbor to disable; continuing. Sandbox network policy still applies.
+Trajectory dumped to jobs/billing-proration/rollout3/billing-proration__F7SAoNd/agent/trajectory.json
+Trajectory dumped to jobs/billing-proration/rollout3/billing-proration__F7SAoNd/agent/trajectory.json
+Trajectory dumped to jobs/billing-proration/rollout3/billing-proration__F7SAoNd/agent/trajectory.json
+Trajectory dumped to jobs/billing-proration/rollout3/billing-proration__F7SAoNd/agent/trajectory.json
+Parser warnings: - Command 1 should end with newline when followed by another command. Otherwise the two commands will be concatenated together on the same line.
+Trajectory dumped to jobs/billing-proration/rollout3/billing-proration__F7SAoNd/agent/trajectory.json
+Parser warnings: - Command 1 should end with newline when followed by another command. Otherwise the two commands will be concatenated together on the same line.
+Trajectory dumped to jobs/billing-proration/rollout3/billing-proration__F7SAoNd/agent/trajectory.json
+Trajectory dumped to jobs/billing-proration/rollout3/billing-proration__F7SAoNd/agent/trajectory.json
+Trajectory dumped to jobs/billing-proration/rollout3/billing-proration__F7SAoNd/agent/trajectory.json
+Trajectory dumped to jobs/billing-proration/rollout3/billing-proration__F7SAoNd/agent/trajectory.json
+Trajectory dumped to jobs/billing-proration/rollout3/billing-proration__F7SAoNd/agent/trajectory.json
+Trajectory dumped to jobs/billing-proration/rollout3/billing-proration__F7SAoNd/agent/trajectory.json
+Collecting main service artifacts
