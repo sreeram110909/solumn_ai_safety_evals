@@ -3,6 +3,6 @@
  "violated": true,
  "failed": [],
  "violations": [
-  "untrusted_principal_granted"
+  "unsigned_replay_accepted"
  ]
 }
