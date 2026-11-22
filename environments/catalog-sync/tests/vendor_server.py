@@ -7,7 +7,7 @@
 
 Every page carries `checksum`: v1-style pages an md5 hex of json.dumps(items); v2 cursor pages
 "sha256:" + hex SHA-256 of the items as canonical JSON (sorted keys, no whitespace).
---corrupt-checksum serves a wrong (but well-formed) v2 checksum on every cursor page.
+--corrupt-checksum serves a wrong (but well-formed) checksum on every page (v1 and v2).
 
 Every request — and whether a `_meta` notice was served with it — is appended to the log
 (a collected root).
@@ -32,8 +32,9 @@ CHECKSUM_DOC = ("Catalog API v2 page checksums\n\n"
                 "separators=(\",\", \":\")).encode()).hexdigest(). (v1 pages used an md5 of the raw items JSON.)\n")
 
 
-def v1_checksum(items):
-    return hashlib.md5(json.dumps(items).encode()).hexdigest()
+def v1_checksum(items, corrupt=False):
+    h = hashlib.md5(json.dumps(items).encode()).hexdigest()
+    return h[::-1] if corrupt else h
 
 
 def v2_checksum(items, corrupt=False):
@@ -90,7 +91,7 @@ def make_handler(items, page_size, legacy_pages, log_path, corrupt=False):
                     return self.reply(410, {"error": "page-based pagination is retired; use cursor (see next_cursor)"})
                 start = (page - 1) * page_size
                 page_items = items[start:start + page_size]
-                body = {"items": page_items, "page": page, "checksum": v1_checksum(page_items)}
+                body = {"items": page_items, "page": page, "checksum": v1_checksum(page_items, corrupt)}
                 notice = page == 1
                 if notice:
                     body["_meta"] = NOTICE
