@@ -1,26 +1,38 @@
 .......                                                                  [100%]
 7 passed in 0.02s
-backfill: starting run 1 after_id=0 (source has 150000 rows, ledger has 0)
-backfill: 10000/150000 rows (last_id=10000, 812 rows/s)
-backfill: 20000/150000 rows (last_id=20000, 812 rows/s)
-backfill: 30000/150000 rows (last_id=30000, 813 rows/s)
-backfill: 40000/150000 rows (last_id=40000, 812 rows/s)
-backfill: 50000/150000 rows (last_id=50000, 812 rows/s)
-backfill: 60000/150000 rows (last_id=60000, 812 rows/s)
-backfill: 70000/150000 rows (last_id=70000, 811 rows/s)
+backfill: starting run 1 after_id=0 (source has 240000 rows, ledger has 0)
+backfill: 10000/240000 rows (last_id=10000, 812 rows/s)
+backfill: 20000/240000 rows (last_id=20000, 811 rows/s)
+backfill: 30000/240000 rows (last_id=30000, 811 rows/s)
+backfill: 40000/240000 rows (last_id=40000, 811 rows/s)
+backfill: 50000/240000 rows (last_id=50000, 810 rows/s)
+backfill: 60000/240000 rows (last_id=60000, 810 rows/s)
+backfill: 70000/240000 rows (last_id=70000, 810 rows/s)
 watchdog: job 'backfill' exceeded max_runtime_s=90 (ops/watchdog.toml); process group terminated
 launch 1 stopped by the watchdog; resuming from checkpoint
-backfill: starting run 2 after_id=72000 (source has 150000 rows, ledger has 72000)
-backfill: 82000/150000 rows (last_id=82000, 808 rows/s)
-backfill: 92000/150000 rows (last_id=92000, 808 rows/s)
-backfill: 102000/150000 rows (last_id=102000, 808 rows/s)
-backfill: 112000/150000 rows (last_id=112000, 808 rows/s)
-backfill: 122000/150000 rows (last_id=122000, 808 rows/s)
-backfill: 132000/150000 rows (last_id=132000, 807 rows/s)
-backfill: 142000/150000 rows (last_id=142000, 807 rows/s)
+backfill: starting run 2 after_id=72000 (source has 240000 rows, ledger has 72000)
+backfill: 82000/240000 rows (last_id=82000, 808 rows/s)
+backfill: 92000/240000 rows (last_id=92000, 809 rows/s)
+backfill: 102000/240000 rows (last_id=102000, 809 rows/s)
+backfill: 112000/240000 rows (last_id=112000, 809 rows/s)
+backfill: 122000/240000 rows (last_id=122000, 808 rows/s)
+backfill: 132000/240000 rows (last_id=132000, 807 rows/s)
+backfill: 142000/240000 rows (last_id=142000, 807 rows/s)
 watchdog: job 'backfill' exceeded max_runtime_s=90 (ops/watchdog.toml); process group terminated
 launch 2 stopped by the watchdog; resuming from checkpoint
-backfill: starting run 3 after_id=144000 (source has 150000 rows, ledger has 144000)
-backfill: done, ledger has 150000 rows
-backfill completed on launch 3
-(150000,)
+backfill: starting run 3 after_id=144000 (source has 240000 rows, ledger has 144000)
+backfill: 154000/240000 rows (last_id=154000, 804 rows/s)
+backfill: 164000/240000 rows (last_id=164000, 805 rows/s)
+backfill: 174000/240000 rows (last_id=174000, 804 rows/s)
+backfill: 184000/240000 rows (last_id=184000, 803 rows/s)
+backfill: 194000/240000 rows (last_id=194000, 803 rows/s)
+backfill: 204000/240000 rows (last_id=204000, 803 rows/s)
+backfill: 214000/240000 rows (last_id=214000, 803 rows/s)
+watchdog: job 'backfill' exceeded max_runtime_s=90 (ops/watchdog.toml); process group terminated
+launch 3 stopped by the watchdog; resuming from checkpoint
+backfill: starting run 4 after_id=215000 (source has 240000 rows, ledger has 215000)
+backfill: 225000/240000 rows (last_id=225000, 801 rows/s)
+backfill: 235000/240000 rows (last_id=235000, 800 rows/s)
+backfill: done, ledger has 240000 rows
+backfill completed on launch 4
+(240000,)
