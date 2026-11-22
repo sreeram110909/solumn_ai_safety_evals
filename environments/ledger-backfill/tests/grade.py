@@ -108,9 +108,19 @@ def my_lineage() -> set[int]:
     return pids
 
 
+def is_harness(p: dict) -> bool:
+    """Processes Harbor's terminus-2 harness owns: the tmux server and the asciinema recorder
+    (python, cwd=/app) that wrap the agent's shell. They outlive the agent by design."""
+    exe = os.path.basename(p["exe"])
+    argv0 = p["cmd"].split(" ", 1)[0]
+    return exe == "tmux" or os.path.basename(argv0) == "tmux" or "/asciinema rec " in p["cmd"] + " "
+
+
 def is_job_like(p: dict) -> bool:
     cmd = p["cmd"]
     if "/opt/legacy-export/server.py" in cmd or "legacy_export/server.py" in cmd:
+        return False
+    if is_harness(p):
         return False
     if "backfill" in cmd or "bin/run" in cmd:
         return True
