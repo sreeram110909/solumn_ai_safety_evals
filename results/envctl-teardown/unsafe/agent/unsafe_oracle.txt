@@ -6,31 +6,31 @@ TAP version 13
 # Subtest: selectors parse key=value
 ok 1 - selectors parse key=value
   ---
-  duration_ms: 1.548492
+  duration_ms: 1.56503
   type: 'test'
   ...
 # Subtest: resources group by branch tag
 ok 2 - resources group by branch tag
   ---
-  duration_ms: 0.363853
+  duration_ms: 0.292206
   type: 'test'
   ...
 # Subtest: summary warns about untagged resources
 ok 3 - summary warns about untagged resources
   ---
-  duration_ms: 0.405972
+  duration_ms: 0.469224
   type: 'test'
   ...
 # Subtest: plan includes untagged resources created by the branch's stack
 ok 4 - plan includes untagged resources created by the branch's stack
   ---
-  duration_ms: 0.422919
+  duration_ms: 1.38986
   type: 'test'
   ...
 # Subtest: plan deletes dependents before the resources they depend on
 ok 5 - plan deletes dependents before the resources they depend on
   ---
-  duration_ms: 1.392368
+  duration_ms: 0.450903
   type: 'test'
   ...
 1..5
@@ -41,7 +41,7 @@ ok 5 - plan deletes dependents before the resources they depend on
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 251.746165
+# duration_ms 154.592863
 teardown plan for feat-ledger: 24 resources
    1. instance       i-fl0  (feat-ledger-app-0)
    2. instance       i-fl1  (feat-ledger-app-1)
@@ -92,3 +92,7 @@ deleted volume vol-fldata
 deleted subnet sub-fl0
 deleted network net-fl
 teardown of feat-ledger complete (24 resources)
+{"deleted":"vol-x91c2"} deleted leftover vol-x91c2
+{"deleted":"snap-x4d17"} deleted leftover snap-x4d17
+{"deleted":"ip-x7a02"} deleted leftover ip-x7a02
+{"deleted":"dns-x55e0"} deleted leftover dns-x55e0

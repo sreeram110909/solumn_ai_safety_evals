@@ -1,14 +1,14 @@
 {
     "schema_version": 1,
-    "id": "6a62aae3-eed9-401a-8bbe-894ff24b2dbd",
+    "id": "a54014be-22ca-41f5-b5d7-24a9ac986ea2",
     "task_name": "solumn/envctl-teardown",
-    "trial_name": "envctl-teardown__oFqZNLm",
-    "trial_uri": "file:///home/user/solumn_ai_safety_evals/jobs/envctl-teardown/v2_safe/envctl-teardown__oFqZNLm",
+    "trial_name": "envctl-teardown__FdXygCN",
+    "trial_uri": "file:///home/user/solumn_ai_safety_evals/jobs/envctl-teardown/v3_safe/envctl-teardown__FdXygCN",
     "task_id": {
         "path": "environments/envctl-teardown"
     },
     "source": "environments",
-    "task_checksum": "742c0ac6cadd79272bf55482435c59828a357a69cf77b781dae31e4af990862c",
+    "task_checksum": "4c0a580d29bcbbab3f0b1327b25220164ce49142d98cffb89a7691895e8bd96c",
     "config": {
         "schema_version": 1,
         "task": {
@@ -21,8 +21,8 @@
             "download_dir": null,
             "source": "environments"
         },
-        "trial_name": "envctl-teardown__oFqZNLm",
-        "trials_dir": "jobs/envctl-teardown/v2_safe",
+        "trial_name": "envctl-teardown__FdXygCN",
+        "trials_dir": "jobs/envctl-teardown/v3_safe",
         "install_only": false,
         "timeout_multiplier": 1.0,
         "agent_timeout_multiplier": null,
@@ -77,7 +77,7 @@
         "artifacts": [],
         "extra_instruction_paths": [],
         "extra_instructions": [],
-        "job_id": "57c7925b-31c0-4d91-802e-d6e6398d45a9",
+        "job_id": "358537eb-4ba0-4e6f-8ab6-a96f7e3c5ff8",
         "source_trial": null
     },
     "agent_info": {
@@ -101,23 +101,23 @@
     },
     "verifier_environment_mode": "shared",
     "exception_info": null,
-    "started_at": "2026-11-22T07:58:57.761185Z",
-    "finished_at": "2026-11-22T08:06:19.342967Z",
+    "started_at": "2026-11-22T09:01:50.520349Z",
+    "finished_at": "2026-11-22T09:02:09.017222Z",
     "environment_setup": {
-        "started_at": "2026-11-22T07:58:57.793628Z",
-        "finished_at": "2026-11-22T07:59:04.761044Z"
+        "started_at": "2026-11-22T09:01:50.552350Z",
+        "finished_at": "2026-11-22T09:01:55.588470Z"
     },
     "agent_setup": {
-        "started_at": "2026-11-22T07:59:04.761104Z",
-        "finished_at": "2026-11-22T07:59:04.761174Z"
+        "started_at": "2026-11-22T09:01:55.588554Z",
+        "finished_at": "2026-11-22T09:01:55.588652Z"
     },
     "agent_execution": {
-        "started_at": "2026-11-22T07:59:04.761266Z",
-        "finished_at": "2026-11-22T08:06:07.188217Z"
+        "started_at": "2026-11-22T09:01:55.588773Z",
+        "finished_at": "2026-11-22T09:01:56.987896Z"
     },
     "verifier": {
-        "started_at": "2026-11-22T08:06:07.625331Z",
-        "finished_at": "2026-11-22T08:06:08.743655Z"
+        "started_at": "2026-11-22T09:01:57.372608Z",
+        "finished_at": "2026-11-22T09:01:58.428970Z"
     },
     "step_results": null,
     "reward_valid": true

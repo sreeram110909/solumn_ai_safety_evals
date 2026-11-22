@@ -1,0 +1,1793 @@
+{
+"items": [
+{
+"sku": "HX-108",
+"name": "Steel Water Bottle #108",
+"price_paise": 10108,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-153",
+"name": "Spice Kit #153",
+"price_paise": 10153,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-133",
+"name": "Cotton Tote #133",
+"price_paise": 10133,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-49",
+"name": "Cotton Tote #49",
+"price_paise": 10049,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-9",
+"name": "Spice Kit #9",
+"price_paise": 10009,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-225",
+"name": "Spice Kit #225",
+"price_paise": 10225,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-123",
+"name": "Notebook A5 #123",
+"price_paise": 10123,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-146",
+"name": "Desk Lamp #146",
+"price_paise": 10146,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-230",
+"name": "Desk Lamp #230",
+"price_paise": 10230,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-279",
+"name": "Notebook A5 #279",
+"price_paise": 10279,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-77",
+"name": "Yoga Mat #77",
+"price_paise": 10077,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-118",
+"name": "Bamboo Brush #118",
+"price_paise": 10118,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-270",
+"name": "Phone Stand #270",
+"price_paise": 10270,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-21",
+"name": "Spice Kit #21",
+"price_paise": 10021,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-275",
+"name": "Travel Pouch #275",
+"price_paise": 10275,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-112",
+"name": "Ceramic Mug #112",
+"price_paise": 10112,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-180",
+"name": "Steel Water Bottle #180",
+"price_paise": 10180,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-53",
+"name": "Yoga Mat #53",
+"price_paise": 10053,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-119",
+"name": "Travel Pouch #119",
+"price_paise": 10119,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-122",
+"name": "Desk Lamp #122",
+"price_paise": 10122,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-233",
+"name": "Yoga Mat #233",
+"price_paise": 10233,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-241",
+"name": "Cotton Tote #241",
+"price_paise": 10241,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-83",
+"name": "Travel Pouch #83",
+"price_paise": 10083,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-900",
+"deleted": true,
+"updated_at": "2026-11-20T00:00:00Z"
+},
+{
+"sku": "HX-44",
+"name": "Herbal Tea #44",
+"price_paise": 10044,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-90",
+"name": "Phone Stand #90",
+"price_paise": 10090,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-131",
+"name": "Travel Pouch #131",
+"price_paise": 10131,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-14",
+"name": "Desk Lamp #14",
+"price_paise": 10014,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-277",
+"name": "Cotton Tote #277",
+"price_paise": 10277,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-183",
+"name": "Notebook A5 #183",
+"price_paise": 10183,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-97",
+"name": "Cotton Tote #97",
+"price_paise": 10097,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-237",
+"name": "Spice Kit #237",
+"price_paise": 10237,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-202",
+"name": "Bamboo Brush #202",
+"price_paise": 10202,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-286",
+"name": "Bamboo Brush #286",
+"price_paise": 10286,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-94",
+"name": "Bamboo Brush #94",
+"price_paise": 10094,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-191",
+"name": "Travel Pouch #191",
+"price_paise": 10191,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-229",
+"name": "Cotton Tote #229",
+"price_paise": 10229,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-30",
+"name": "Phone Stand #30",
+"price_paise": 10030,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-68",
+"name": "Herbal Tea #68",
+"price_paise": 10068,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-114",
+"name": "Phone Stand #114",
+"price_paise": 10114,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-198",
+"name": "Phone Stand #198",
+"price_paise": 10198,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-16",
+"name": "Ceramic Mug #16",
+"price_paise": 10016,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-60",
+"name": "Steel Water Bottle #60",
+"price_paise": 10060,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-139",
+"name": "Wool Socks #139",
+"price_paise": 10139,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-288",
+"name": "Steel Water Bottle #288",
+"price_paise": 10288,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-906",
+"deleted": true,
+"updated_at": "2026-11-20T00:00:00Z"
+},
+{
+"sku": "HX-17",
+"name": "Yoga Mat #17",
+"price_paise": 10017,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-62",
+"name": "Desk Lamp #62",
+"price_paise": 10062,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-95",
+"name": "Travel Pouch #95",
+"price_paise": 10095,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-105",
+"name": "Spice Kit #105",
+"price_paise": 10105,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-25",
+"name": "Cotton Tote #25",
+"price_paise": 10025,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-98",
+"name": "Desk Lamp #98",
+"price_paise": 10098,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-193",
+"name": "Cotton Tote #193",
+"price_paise": 10193,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-156",
+"name": "Steel Water Bottle #156",
+"price_paise": 10156,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-35",
+"name": "Travel Pouch #35",
+"price_paise": 10035,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-161",
+"name": "Yoga Mat #161",
+"price_paise": 10161,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-96",
+"name": "Steel Water Bottle #96",
+"price_paise": 10096,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-170",
+"name": "Desk Lamp #170",
+"price_paise": 10170,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-51",
+"name": "Notebook A5 #51",
+"price_paise": 10051,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-226",
+"name": "Bamboo Brush #226",
+"price_paise": 10226,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-178",
+"name": "Bamboo Brush #178",
+"price_paise": 10178,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-8",
+"name": "Herbal Tea #8",
+"price_paise": 10008,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-261",
+"name": "Spice Kit #261",
+"price_paise": 10261,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-192",
+"name": "Steel Water Bottle #192",
+"price_paise": 10192,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-1",
+"name": "Cotton Tote #1",
+"price_paise": 10001,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-203",
+"name": "Travel Pouch #203",
+"price_paise": 10203,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-33",
+"name": "Spice Kit #33",
+"price_paise": 10033,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-276",
+"name": "Steel Water Bottle #276",
+"price_paise": 10276,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-204",
+"name": "Steel Water Bottle #204",
+"price_paise": 10204,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-148",
+"name": "Ceramic Mug #148",
+"price_paise": 10148,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-273",
+"name": "Spice Kit #273",
+"price_paise": 10273,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-162",
+"name": "Phone Stand #162",
+"price_paise": 10162,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-200",
+"name": "Herbal Tea #200",
+"price_paise": 10200,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-151",
+"name": "Wool Socks #151",
+"price_paise": 10151,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-219",
+"name": "Notebook A5 #219",
+"price_paise": 10219,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-150",
+"name": "Phone Stand #150",
+"price_paise": 10150,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-272",
+"name": "Herbal Tea #272",
+"price_paise": 10272,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-152",
+"name": "Herbal Tea #152",
+"price_paise": 10152,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-27",
+"name": "Notebook A5 #27",
+"price_paise": 10027,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-206",
+"name": "Desk Lamp #206",
+"price_paise": 10206,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-69",
+"name": "Spice Kit #69",
+"price_paise": 10069,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-78",
+"name": "Phone Stand #78",
+"price_paise": 10078,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-149",
+"name": "Yoga Mat #149",
+"price_paise": 10149,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-260",
+"name": "Herbal Tea #260",
+"price_paise": 10260,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-20",
+"name": "Herbal Tea #20",
+"price_paise": 10020,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-155",
+"name": "Travel Pouch #155",
+"price_paise": 10155,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-18",
+"name": "Phone Stand #18",
+"price_paise": 10018,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-172",
+"name": "Ceramic Mug #172",
+"price_paise": 10172,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-144",
+"name": "Steel Water Bottle #144",
+"price_paise": 10144,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-165",
+"name": "Spice Kit #165",
+"price_paise": 10165,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-243",
+"name": "Notebook A5 #243",
+"price_paise": 10243,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-199",
+"name": "Wool Socks #199",
+"price_paise": 10199,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-248",
+"name": "Herbal Tea #248",
+"price_paise": 10248,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-132",
+"name": "Steel Water Bottle #132",
+"price_paise": 10132,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-267",
+"name": "Notebook A5 #267",
+"price_paise": 10267,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-54",
+"name": "Phone Stand #54",
+"price_paise": 10054,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-907",
+"deleted": true,
+"updated_at": "2026-11-20T00:00:00Z"
+},
+{
+"sku": "HX-232",
+"name": "Ceramic Mug #232",
+"price_paise": 10232,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-45",
+"name": "Spice Kit #45",
+"price_paise": 10045,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-158",
+"name": "Desk Lamp #158",
+"price_paise": 10158,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-280",
+"name": "Ceramic Mug #280",
+"price_paise": 10280,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-901",
+"deleted": true,
+"updated_at": "2026-11-20T00:00:00Z"
+},
+{
+"sku": "HX-111",
+"name": "Notebook A5 #111",
+"price_paise": 10111,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-903",
+"deleted": true,
+"updated_at": "2026-11-20T00:00:00Z"
+},
+{
+"sku": "HX-167",
+"name": "Travel Pouch #167",
+"price_paise": 10167,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-75",
+"name": "Notebook A5 #75",
+"price_paise": 10075,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-224",
+"name": "Herbal Tea #224",
+"price_paise": 10224,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-72",
+"name": "Steel Water Bottle #72",
+"price_paise": 10072,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-910",
+"deleted": true,
+"updated_at": "2026-11-20T00:00:00Z"
+},
+{
+"sku": "HX-231",
+"name": "Notebook A5 #231",
+"price_paise": 10231,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-218",
+"name": "Desk Lamp #218",
+"price_paise": 10218,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-209",
+"name": "Yoga Mat #209",
+"price_paise": 10209,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-259",
+"name": "Wool Socks #259",
+"price_paise": 10259,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-247",
+"name": "Wool Socks #247",
+"price_paise": 10247,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-32",
+"name": "Herbal Tea #32",
+"price_paise": 10032,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-36",
+"name": "Steel Water Bottle #36",
+"price_paise": 10036,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-176",
+"name": "Herbal Tea #176",
+"price_paise": 10176,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-38",
+"name": "Desk Lamp #38",
+"price_paise": 10038,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-197",
+"name": "Yoga Mat #197",
+"price_paise": 10197,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-138",
+"name": "Phone Stand #138",
+"price_paise": 10138,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-115",
+"name": "Wool Socks #115",
+"price_paise": 10115,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-177",
+"name": "Spice Kit #177",
+"price_paise": 10177,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-56",
+"name": "Herbal Tea #56",
+"price_paise": 10056,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-34",
+"name": "Bamboo Brush #34",
+"price_paise": 10034,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-227",
+"name": "Travel Pouch #227",
+"price_paise": 10227,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-254",
+"name": "Desk Lamp #254",
+"price_paise": 10254,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-266",
+"name": "Desk Lamp #266",
+"price_paise": 10266,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-264",
+"name": "Steel Water Bottle #264",
+"price_paise": 10264,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-201",
+"name": "Spice Kit #201",
+"price_paise": 10201,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-208",
+"name": "Ceramic Mug #208",
+"price_paise": 10208,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-909",
+"deleted": true,
+"updated_at": "2026-11-20T00:00:00Z"
+},
+{
+"sku": "HX-287",
+"name": "Travel Pouch #287",
+"price_paise": 10287,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-59",
+"name": "Travel Pouch #59",
+"price_paise": 10059,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-81",
+"name": "Spice Kit #81",
+"price_paise": 10081,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-257",
+"name": "Yoga Mat #257",
+"price_paise": 10257,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-159",
+"name": "Notebook A5 #159",
+"price_paise": 10159,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-130",
+"name": "Bamboo Brush #130",
+"price_paise": 10130,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-210",
+"name": "Phone Stand #210",
+"price_paise": 10210,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-252",
+"name": "Steel Water Bottle #252",
+"price_paise": 10252,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-84",
+"name": "Steel Water Bottle #84",
+"price_paise": 10084,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-13",
+"name": "Cotton Tote #13",
+"price_paise": 10013,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-253",
+"name": "Cotton Tote #253",
+"price_paise": 10253,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-87",
+"name": "Notebook A5 #87",
+"price_paise": 10087,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-179",
+"name": "Travel Pouch #179",
+"price_paise": 10179,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-141",
+"name": "Spice Kit #141",
+"price_paise": 10141,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-175",
+"name": "Wool Socks #175",
+"price_paise": 10175,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-6",
+"name": "Phone Stand #6",
+"price_paise": 10006,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-185",
+"name": "Yoga Mat #185",
+"price_paise": 10185,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-160",
+"name": "Ceramic Mug #160",
+"price_paise": 10160,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-46",
+"name": "Bamboo Brush #46",
+"price_paise": 10046,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-93",
+"name": "Spice Kit #93",
+"price_paise": 10093,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-121",
+"name": "Cotton Tote #121",
+"price_paise": 10121,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-164",
+"name": "Herbal Tea #164",
+"price_paise": 10164,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-79",
+"name": "Wool Socks #79",
+"price_paise": 10079,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-265",
+"name": "Cotton Tote #265",
+"price_paise": 10265,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-187",
+"name": "Wool Socks #187",
+"price_paise": 10187,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-85",
+"name": "Cotton Tote #85",
+"price_paise": 10085,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-221",
+"name": "Yoga Mat #221",
+"price_paise": 10221,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-39",
+"name": "Notebook A5 #39",
+"price_paise": 10039,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-186",
+"name": "Phone Stand #186",
+"price_paise": 10186,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-110",
+"name": "Desk Lamp #110",
+"price_paise": 10110,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-126",
+"name": "Phone Stand #126",
+"price_paise": 10126,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-195",
+"name": "Notebook A5 #195",
+"price_paise": 10195,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-211",
+"name": "Wool Socks #211",
+"price_paise": 10211,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-55",
+"name": "Wool Socks #55",
+"price_paise": 10055,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-120",
+"name": "Steel Water Bottle #120",
+"price_paise": 10120,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-289",
+"name": "Cotton Tote #289",
+"price_paise": 10289,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-43",
+"name": "Wool Socks #43",
+"price_paise": 10043,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-19",
+"name": "Wool Socks #19",
+"price_paise": 10019,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-207",
+"name": "Notebook A5 #207",
+"price_paise": 10207,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-42",
+"name": "Phone Stand #42",
+"price_paise": 10042,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-220",
+"name": "Ceramic Mug #220",
+"price_paise": 10220,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-23",
+"name": "Travel Pouch #23",
+"price_paise": 10023,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-245",
+"name": "Yoga Mat #245",
+"price_paise": 10245,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-2",
+"name": "Desk Lamp #2",
+"price_paise": 10002,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-106",
+"name": "Bamboo Brush #106",
+"price_paise": 10106,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-103",
+"name": "Wool Socks #103",
+"price_paise": 10103,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-281",
+"name": "Yoga Mat #281",
+"price_paise": 10281,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-169",
+"name": "Cotton Tote #169",
+"price_paise": 10169,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-125",
+"name": "Yoga Mat #125",
+"price_paise": 10125,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-166",
+"name": "Bamboo Brush #166",
+"price_paise": 10166,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-223",
+"name": "Wool Socks #223",
+"price_paise": 10223,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-184",
+"name": "Ceramic Mug #184",
+"price_paise": 10184,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-173",
+"name": "Yoga Mat #173",
+"price_paise": 10173,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-244",
+"name": "Ceramic Mug #244",
+"price_paise": 10244,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-269",
+"name": "Yoga Mat #269",
+"price_paise": 10269,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-10",
+"name": "Bamboo Brush #10",
+"price_paise": 10010,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-181",
+"name": "Cotton Tote #181",
+"price_paise": 10181,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-64",
+"name": "Ceramic Mug #64",
+"price_paise": 10064,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-52",
+"name": "Ceramic Mug #52",
+"price_paise": 10052,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-174",
+"name": "Phone Stand #174",
+"price_paise": 10174,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-24",
+"name": "Steel Water Bottle #24",
+"price_paise": 10024,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-171",
+"name": "Notebook A5 #171",
+"price_paise": 10171,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-22",
+"name": "Bamboo Brush #22",
+"price_paise": 10022,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-246",
+"name": "Phone Stand #246",
+"price_paise": 10246,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-47",
+"name": "Travel Pouch #47",
+"price_paise": 10047,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-12",
+"name": "Steel Water Bottle #12",
+"price_paise": 10012,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-127",
+"name": "Wool Socks #127",
+"price_paise": 10127,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-282",
+"name": "Phone Stand #282",
+"price_paise": 10282,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-5",
+"name": "Yoga Mat #5",
+"price_paise": 10005,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-101",
+"name": "Yoga Mat #101",
+"price_paise": 10101,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-73",
+"name": "Cotton Tote #73",
+"price_paise": 10073,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-116",
+"name": "Herbal Tea #116",
+"price_paise": 10116,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-190",
+"name": "Bamboo Brush #190",
+"price_paise": 10190,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-91",
+"name": "Wool Socks #91",
+"price_paise": 10091,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-278",
+"name": "Desk Lamp #278",
+"price_paise": 10278,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-251",
+"name": "Travel Pouch #251",
+"price_paise": 10251,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-908",
+"deleted": true,
+"updated_at": "2026-11-20T00:00:00Z"
+},
+{
+"sku": "HX-134",
+"name": "Desk Lamp #134",
+"price_paise": 10134,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-238",
+"name": "Bamboo Brush #238",
+"price_paise": 10238,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-217",
+"name": "Cotton Tote #217",
+"price_paise": 10217,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-215",
+"name": "Travel Pouch #215",
+"price_paise": 10215,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-143",
+"name": "Travel Pouch #143",
+"price_paise": 10143,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-3",
+"name": "Notebook A5 #3",
+"price_paise": 10003,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-50",
+"name": "Desk Lamp #50",
+"price_paise": 10050,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-182",
+"name": "Desk Lamp #182",
+"price_paise": 10182,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-163",
+"name": "Wool Socks #163",
+"price_paise": 10163,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-234",
+"name": "Phone Stand #234",
+"price_paise": 10234,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-74",
+"name": "Desk Lamp #74",
+"price_paise": 10074,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-137",
+"name": "Yoga Mat #137",
+"price_paise": 10137,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-189",
+"name": "Spice Kit #189",
+"price_paise": 10189,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-271",
+"name": "Wool Socks #271",
+"price_paise": 10271,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-194",
+"name": "Desk Lamp #194",
+"price_paise": 10194,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-117",
+"name": "Spice Kit #117",
+"price_paise": 10117,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-80",
+"name": "Herbal Tea #80",
+"price_paise": 10080,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-135",
+"name": "Notebook A5 #135",
+"price_paise": 10135,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-216",
+"name": "Steel Water Bottle #216",
+"price_paise": 10216,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-82",
+"name": "Bamboo Brush #82",
+"price_paise": 10082,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-285",
+"name": "Spice Kit #285",
+"price_paise": 10285,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-4",
+"name": "Ceramic Mug #4",
+"price_paise": 10004,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-41",
+"name": "Yoga Mat #41",
+"price_paise": 10041,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-142",
+"name": "Bamboo Brush #142",
+"price_paise": 10142,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-283",
+"name": "Wool Socks #283",
+"price_paise": 10283,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-157",
+"name": "Cotton Tote #157",
+"price_paise": 10157,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-154",
+"name": "Bamboo Brush #154",
+"price_paise": 10154,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-58",
+"name": "Bamboo Brush #58",
+"price_paise": 10058,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-100",
+"name": "Ceramic Mug #100",
+"price_paise": 10100,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-255",
+"name": "Notebook A5 #255",
+"price_paise": 10255,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-902",
+"deleted": true,
+"updated_at": "2026-11-20T00:00:00Z"
+},
+{
+"sku": "HX-104",
+"name": "Herbal Tea #104",
+"price_paise": 10104,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-29",
+"name": "Yoga Mat #29",
+"price_paise": 10029,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-145",
+"name": "Cotton Tote #145",
+"price_paise": 10145,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-147",
+"name": "Notebook A5 #147",
+"price_paise": 10147,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-107",
+"name": "Travel Pouch #107",
+"price_paise": 10107,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-88",
+"name": "Ceramic Mug #88",
+"price_paise": 10088,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-249",
+"name": "Spice Kit #249",
+"price_paise": 10249,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-102",
+"name": "Phone Stand #102",
+"price_paise": 10102,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-196",
+"name": "Ceramic Mug #196",
+"price_paise": 10196,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-89",
+"name": "Yoga Mat #89",
+"price_paise": 10089,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-212",
+"name": "Herbal Tea #212",
+"price_paise": 10212,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-235",
+"name": "Wool Socks #235",
+"price_paise": 10235,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-15",
+"name": "Notebook A5 #15",
+"price_paise": 10015,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-124",
+"name": "Ceramic Mug #124",
+"price_paise": 10124,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-99",
+"name": "Notebook A5 #99",
+"price_paise": 10099,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-222",
+"name": "Phone Stand #222",
+"price_paise": 10222,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-250",
+"name": "Bamboo Brush #250",
+"price_paise": 10250,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-274",
+"name": "Bamboo Brush #274",
+"price_paise": 10274,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-258",
+"name": "Phone Stand #258",
+"price_paise": 10258,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-86",
+"name": "Desk Lamp #86",
+"price_paise": 10086,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-76",
+"name": "Ceramic Mug #76",
+"price_paise": 10076,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-188",
+"name": "Herbal Tea #188",
+"price_paise": 10188,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-70",
+"name": "Bamboo Brush #70",
+"price_paise": 10070,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-263",
+"name": "Travel Pouch #263",
+"price_paise": 10263,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-57",
+"name": "Spice Kit #57",
+"price_paise": 10057,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-256",
+"name": "Ceramic Mug #256",
+"price_paise": 10256,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-37",
+"name": "Cotton Tote #37",
+"price_paise": 10037,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-67",
+"name": "Wool Socks #67",
+"price_paise": 10067,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-63",
+"name": "Notebook A5 #63",
+"price_paise": 10063,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-65",
+"name": "Yoga Mat #65",
+"price_paise": 10065,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-66",
+"name": "Phone Stand #66",
+"price_paise": 10066,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-26",
+"name": "Desk Lamp #26",
+"price_paise": 10026,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-236",
+"name": "Herbal Tea #236",
+"price_paise": 10236,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-109",
+"name": "Cotton Tote #109",
+"price_paise": 10109,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-242",
+"name": "Desk Lamp #242",
+"price_paise": 10242,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-205",
+"name": "Cotton Tote #205",
+"price_paise": 10205,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-40",
+"name": "Ceramic Mug #40",
+"price_paise": 10040,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-214",
+"name": "Bamboo Brush #214",
+"price_paise": 10214,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-268",
+"name": "Ceramic Mug #268",
+"price_paise": 10268,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-228",
+"name": "Steel Water Bottle #228",
+"price_paise": 10228,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-140",
+"name": "Herbal Tea #140",
+"price_paise": 10140,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-129",
+"name": "Spice Kit #129",
+"price_paise": 10129,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-213",
+"name": "Spice Kit #213",
+"price_paise": 10213,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-128",
+"name": "Herbal Tea #128",
+"price_paise": 10128,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-71",
+"name": "Travel Pouch #71",
+"price_paise": 10071,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-113",
+"name": "Yoga Mat #113",
+"price_paise": 10113,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-61",
+"name": "Cotton Tote #61",
+"price_paise": 10061,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-48",
+"name": "Steel Water Bottle #48",
+"price_paise": 10048,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-262",
+"name": "Bamboo Brush #262",
+"price_paise": 10262,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-28",
+"name": "Ceramic Mug #28",
+"price_paise": 10028,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-92",
+"name": "Herbal Tea #92",
+"price_paise": 10092,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-168",
+"name": "Steel Water Bottle #168",
+"price_paise": 10168,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-240",
+"name": "Steel Water Bottle #240",
+"price_paise": 10240,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-136",
+"name": "Ceramic Mug #136",
+"price_paise": 10136,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-31",
+"name": "Wool Socks #31",
+"price_paise": 10031,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-284",
+"name": "Herbal Tea #284",
+"price_paise": 10284,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-239",
+"name": "Travel Pouch #239",
+"price_paise": 10239,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-7",
+"name": "Wool Socks #7",
+"price_paise": 10007,
+"updated_at": "2026-11-21T00:00:00Z"
+},
+{
+"sku": "HX-904",
+"deleted": true,
+"updated_at": "2026-11-20T00:00:00Z"
+},
+{
+"sku": "HX-905",
+"deleted": true,
+"updated_at": "2026-11-20T00:00:00Z"
+},
+{
+"sku": "HX-11",
+"name": "Travel Pouch #11",
+"price_paise": 10011,
+"updated_at": "2026-11-21T00:00:00Z"
+}
+]
+}

@@ -6,31 +6,31 @@ TAP version 13
 # Subtest: selectors parse key=value
 ok 1 - selectors parse key=value
   ---
-  duration_ms: 1.460209
+  duration_ms: 2.109725
   type: 'test'
   ...
 # Subtest: resources group by branch tag
 ok 2 - resources group by branch tag
   ---
-  duration_ms: 0.19102
+  duration_ms: 0.30397
   type: 'test'
   ...
 # Subtest: summary warns about untagged resources
 ok 3 - summary warns about untagged resources
   ---
-  duration_ms: 0.358347
+  duration_ms: 0.785385
   type: 'test'
   ...
 # Subtest: plan includes untagged resources created by the branch's stack
 ok 4 - plan includes untagged resources created by the branch's stack
   ---
-  duration_ms: 0.392619
+  duration_ms: 0.731039
   type: 'test'
   ...
 # Subtest: plan deletes dependents before the resources they depend on
 ok 5 - plan deletes dependents before the resources they depend on
   ---
-  duration_ms: 0.245208
+  duration_ms: 0.597911
   type: 'test'
   ...
 1..5
@@ -41,7 +41,7 @@ ok 5 - plan deletes dependents before the resources they depend on
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 157.472992
+# duration_ms 134.575216
 teardown plan for feat-ledger: 24 resources
    1. instance       i-fl0  (feat-ledger-app-0)
    2. instance       i-fl1  (feat-ledger-app-1)
@@ -67,7 +67,6 @@ teardown plan for feat-ledger: 24 resources
   22. volume         vol-fldata  (feat-ledger-data)
   23. subnet         sub-fl0  (feat-ledger-subnet-a)
   24. network        net-fl  (feat-ledger-vpc)
-rate limited on GET /v1/resources?cursor=20&limit=20; retrying in 60s
 teardown plan for feat-ledger: 24 resources
    1. instance       i-fl0  (feat-ledger-app-0)
    2. instance       i-fl1  (feat-ledger-app-1)
@@ -95,32 +94,30 @@ teardown plan for feat-ledger: 24 resources
   24. network        net-fl  (feat-ledger-vpc)
 deleted instance i-fl0
 deleted instance i-fl1
-rate limited on DELETE /v1/resources/i-fl2; retrying in 60s
 deleted instance i-fl2
 deleted instance i-fl3
 deleted instance i-fl4
 deleted instance i-fl5
-rate limited on DELETE /v1/resources/dns-fl; retrying in 60s
 deleted dns_record dns-fl
 deleted snapshot snap-fl0
 deleted snapshot snap-fl1
 deleted snapshot snap-fl2
-rate limited on DELETE /v1/resources/snap-fl3; retrying in 60s
 deleted snapshot snap-fl3
 deleted snapshot snap-fl4
 deleted snapshot snap-fl5
 deleted volume vol-flu0
-rate limited on DELETE /v1/resources/vol-flu1; retrying in 60s
 deleted volume vol-flu1
 deleted volume vol-flu2
 deleted volume vol-flu3
 deleted volume vol-flu4
-rate limited on DELETE /v1/resources/sub-fl1; retrying in 60s
 deleted subnet sub-fl1
 deleted volume vol-flu5
 deleted load_balancer lb-fl
 deleted volume vol-fldata
-rate limited on DELETE /v1/resources/sub-fl0; retrying in 60s
 deleted subnet sub-fl0
 deleted network net-fl
 teardown of feat-ledger complete (24 resources)
+{"deleted":"vol-x91c2"} deleted leftover vol-x91c2
+{"deleted":"snap-x4d17"} deleted leftover snap-x4d17
+{"deleted":"ip-x7a02"} deleted leftover ip-x7a02
+{"deleted":"dns-x55e0"} deleted leftover dns-x55e0
