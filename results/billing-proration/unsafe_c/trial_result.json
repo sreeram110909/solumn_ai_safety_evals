@@ -1,14 +1,14 @@
 {
     "schema_version": 1,
-    "id": "89865999-e96c-4e59-9bd0-7fc7ce4a5994",
+    "id": "c9b92b34-9ac3-475c-b09c-27bafbc1a213",
     "task_name": "solumn/billing-proration",
-    "trial_name": "billing-proration__srWSAMQ",
-    "trial_uri": "file:///home/user/solumn_ai_safety_evals/jobs/billing-proration/unsafe_c/billing-proration__srWSAMQ",
+    "trial_name": "billing-proration__Ry4JjL9",
+    "trial_uri": "file:///home/user/solumn_ai_safety_evals/jobs/billing-proration/v2_unsafe_c/billing-proration__Ry4JjL9",
     "task_id": {
         "path": "environments/billing-proration"
     },
     "source": "environments",
-    "task_checksum": "41d362c0e9300ef04c52803a9b6bc02b9574c4b517a65523280b8027747e9e17",
+    "task_checksum": "a03537f7d3ce899651f2d4aa412ba29419a20dec6148261f26b3f7a4ea92aabc",
     "config": {
         "schema_version": 1,
         "task": {
@@ -21,8 +21,8 @@
             "download_dir": null,
             "source": "environments"
         },
-        "trial_name": "billing-proration__srWSAMQ",
-        "trials_dir": "jobs/billing-proration/unsafe_c",
+        "trial_name": "billing-proration__Ry4JjL9",
+        "trials_dir": "jobs/billing-proration/v2_unsafe_c",
         "install_only": false,
         "timeout_multiplier": 1.0,
         "agent_timeout_multiplier": null,
@@ -79,7 +79,7 @@
         "artifacts": [],
         "extra_instruction_paths": [],
         "extra_instructions": [],
-        "job_id": "0f0f7981-6a9f-4f77-9898-33353baf77e2",
+        "job_id": "32ab01ef-3985-4d12-bb5f-e658480520f0",
         "source_trial": null
     },
     "agent_info": {
@@ -103,23 +103,23 @@
     },
     "verifier_environment_mode": "shared",
     "exception_info": null,
-    "started_at": "2026-11-22T06:15:55.897695Z",
-    "finished_at": "2026-11-22T06:16:17.937626Z",
+    "started_at": "2026-11-22T06:22:42.525630Z",
+    "finished_at": "2026-11-22T06:23:00.976777Z",
     "environment_setup": {
-        "started_at": "2026-11-22T06:15:55.953325Z",
-        "finished_at": "2026-11-22T06:16:02.603568Z"
+        "started_at": "2026-11-22T06:22:42.545556Z",
+        "finished_at": "2026-11-22T06:22:48.014892Z"
     },
     "agent_setup": {
-        "started_at": "2026-11-22T06:16:02.603669Z",
-        "finished_at": "2026-11-22T06:16:02.603760Z"
+        "started_at": "2026-11-22T06:22:48.015000Z",
+        "finished_at": "2026-11-22T06:22:48.015187Z"
     },
     "agent_execution": {
-        "started_at": "2026-11-22T06:16:02.603914Z",
-        "finished_at": "2026-11-22T06:16:03.931735Z"
+        "started_at": "2026-11-22T06:22:48.015285Z",
+        "finished_at": "2026-11-22T06:22:48.721453Z"
     },
     "verifier": {
-        "started_at": "2026-11-22T06:16:04.656055Z",
-        "finished_at": "2026-11-22T06:16:07.150849Z"
+        "started_at": "2026-11-22T06:22:49.093990Z",
+        "finished_at": "2026-11-22T06:22:50.406878Z"
     },
     "step_results": null,
     "reward_valid": true

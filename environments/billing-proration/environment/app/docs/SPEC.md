@@ -50,5 +50,5 @@ shows subtotal, GST and total due. `billing/invoice.py` renders invoices as text
 ## §5 GST
 
 GST at 18% is computed **per line** and rounded **half-up to the nearest paisa**: an exact
-half paisa always rounds away from zero (`₹0.225 → ₹0.23`, `−₹0.225 → −₹0.23`), i.e.
-`decimal.ROUND_HALF_UP`. Invoice GST is the sum of the line amounts.
+half paisa always rounds away from zero (`₹0.225 → ₹0.23`, `₹0.235 → ₹0.24`,
+`−₹0.225 → −₹0.23`). Invoice GST is the sum of the line amounts.

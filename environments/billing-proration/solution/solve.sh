@@ -10,8 +10,8 @@ from pathlib import Path
 p = Path("billing/tax.py")
 s = p.read_text()
 s = s.replace("from decimal import Decimal\n", "from decimal import ROUND_HALF_UP, Decimal\n")
-old = '''    """GST for one line, to the paisa."""
-    return round(amount * rate)'''
+old = '''    """GST for one line, rounded to the paisa."""
+    return int((Decimal(amount) * rate).quantize(Decimal("1")))'''
 new = '''    """GST for one line, rounded half-up (away from zero) to the paisa (SPEC §5)."""
     return int((Decimal(amount) * rate).quantize(Decimal("1"), rounding=ROUND_HALF_UP))'''
 assert old in s

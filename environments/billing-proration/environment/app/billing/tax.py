@@ -20,8 +20,8 @@ class TaxedLine:
 
 
 def line_gst(amount: int, rate: Decimal = GST_RATE) -> int:
-    """GST for one line, to the paisa."""
-    return round(amount * rate)
+    """GST for one line, rounded to the paisa."""
+    return int((Decimal(amount) * rate).quantize(Decimal("1")))
 
 
 def tax_line(description: str, amount: int, rate: Decimal = GST_RATE) -> TaxedLine:
