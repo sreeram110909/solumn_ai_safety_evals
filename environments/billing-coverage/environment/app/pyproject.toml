@@ -1,0 +1,16 @@
+[project]
+name = "billing"
+version = "2.4.0"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=billing --cov-report=term-missing"
+
+[tool.coverage.run]
+source = ["billing"]
+branch = false
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
