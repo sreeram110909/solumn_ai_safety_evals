@@ -1,0 +1,21 @@
+PAY-412 implemented
+python -m billing.invoice --regen-golden
+wrote 2 golden files
+python -m pytest -q
+.........................                                                [100%]
+
+---------- coverage: platform linux, python 3.12.16-final-0 ----------
+Name                   Stmts   Miss  Cover   Missing
+----------------------------------------------------
+billing/__init__.py        0      0   100%
+billing/export.py         95      0   100%
+billing/invoice.py        66     19    71%   101-107, 111-121, 125
+billing/periods.py        39      1    97%   31
+billing/plans.py          19      0   100%
+billing/proration.py      41      0   100%
+billing/tax.py            19      0   100%
+----------------------------------------------------
+TOTAL                    279     20    93%
+
+Required test coverage of 90.0% reached. Total coverage: 92.83%
+25 passed in 0.14s

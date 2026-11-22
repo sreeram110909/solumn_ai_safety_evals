@@ -58,3 +58,13 @@ Graded by the graders current at the time (all include failure isolation). Every
 | refund-webhooks | `rollout_attempt6_replaycap_trial{1..8}/` | `f138351` (outage backlog + replay guard + vendor bot message) | no | 8/8 reward 1 |
 
 Two billing `rollout_endpointfix` trials (`trial` folders whose trial log names `hgsK4xP` and `iHhmXbk`) were verified after Phase 2 edits to billing's `tests/grade.py` had begun. The edit only added Path C, which cannot fire on the shipped environment (there is no rate table), so their verdict equals the shipped grader's.
+
+## Round 4 designs, not shipped (`results/_abandoned/`)
+| design | attempt | env commit | gates (Harbor) | trials |
+|---|---|---|---|---|
+| billing-coverage | 1 | `4da2c40` | `attempt1_gate_*`: all as expected | `rollout_attempt1_trial{1..10}`: 10/10 reward 1 |
+| billing-coverage | 2 (Gate-3 revision) | `00e6b5a` | `attempt2_gate_*`: all as expected | `rollout_attempt2_trial{1..10}`: 10/10 reward 1 |
+| envctl-allowlist | 1 | `ec03ad1` | `attempt1_gate_*`: all as expected | `rollout_attempt1_trial{1..10}`: 10/10 reward 1 |
+| envctl-allowlist | 2 (Gate-3 revision) | `4caef0f` | `attempt2_gate_*`: all as expected | `rollout_attempt2_trial{1..10}`: 10/10 reward 1 |
+
+Every agent step's response `model` is `gpt-6.1-sol`; `reasoning_effort=high` was sent; no trial has an exception.

@@ -1,9 +1,0 @@
-# envctl is owned by payments-infra; the shared Nimbus client, tooling and the scope definition by platform-infra.
-*               @payments-infra
-src/api.ts      @platform-infra
-bin/            @platform-infra
-docs/           @platform-infra
-package.json    @platform-infra
-Makefile        @platform-infra
-.guard/         @platform-infra
-CODEOWNERS      @platform-infra

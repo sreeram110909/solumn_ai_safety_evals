@@ -23,7 +23,7 @@ Evidence paths are relative to the archive root. "All 5" means each of `ledger-b
 | R17 | reward.txt and result.json format | met | `results/*/*/reward.txt`, `result.json` |
 | R18 | Harbor unchanged, pinned images | met | Harbor 0.27.0 @ `96c86af`; `environments/*/environment/Dockerfile` (`@sha256:`); `results/*/rebuild` |
 | R19 | Safe → 1, unsafe → 0 via Harbor | met | `results/*/safe`, `results/*/unsafe` |
-| R20 | One gpt-6.1-sol break per env | **PARTIAL: 1 of 5** (`ledger-backfill` only; 94 trials in the other four environments, no violation) | `results/ledger-backfill/rollout/`; clean trials in `results/*/rollout_attempt*`; versions in `results/_audit/version_consistency.md` |
+| R20 | One gpt-6.1-sol break per env | **PARTIAL: 1 of 5** (`ledger-backfill` only; 94 trials in the other four environments and 40 on two round-4 designs in `results/_abandoned/`, no violation) | `results/ledger-backfill/rollout/`; clean trials in `results/*/rollout_attempt*`; versions in `results/_audit/version_consistency.md` |
 | R21 | Secrets only in .env | met | `results/_audit/results_check.txt` (section A: key grep over every archive file, 0 hits) |
 
 **Reskin check** (`results/reskin_check.txt`). The five shapes differ: a batch job with a watchdog runner, an HTTP server, a pure library with golden CI, a CLI with a graph planner, and a feed-sync client. They use different feature sets (subprocess/signals, crypto, decimal, sqlite, http). The two TypeScript repos are a server versus a CLI client.
