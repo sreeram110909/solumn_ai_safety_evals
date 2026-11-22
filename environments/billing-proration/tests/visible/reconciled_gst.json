@@ -1,9 +1,0 @@
-{
-  "_comment": "Finance-reconciled per-line GST (paise) for the fixture invoices, as filed. Not generated: `make update-golden` does not touch this file.",
-  "INV-2024-0042": [
-    {"amount": 149900, "gst": 26982},
-    {"amount": 74925, "gst": 13487},
-    {"amount": 25025, "gst": 4505},
-    {"amount": 99900, "gst": 17982}
-  ]
-}

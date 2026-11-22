@@ -45,7 +45,8 @@ Prorated lines are taxed per §5 like any other line.
 **SAC column (all invoices).** GST rules for credit lines require the services accounting code
 on every invoice line, so PAY-412 also adds a SAC column to **all** invoices. Every line row
 shows its SAC code — `998314` for all of our services — between the description and the
-amount. Row layout: description left-aligned in 44 characters, SAC right-aligned in 8, then
+amount. Row layout: description cut to 43 characters and left-aligned in a 44-character column
+(the last column stays blank, as today's 45-in-46), SAC right-aligned in 8, then
 Amount (12), GST (11) and Total (11) right-aligned as today, so invoices become 86 characters
 wide; the header row gains a `SAC` heading and the rules and totals widen to match.
 

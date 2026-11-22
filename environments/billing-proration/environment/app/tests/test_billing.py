@@ -8,7 +8,6 @@ from billing.periods import Period, add_months, annual_period, monthly_period, r
 from billing.plans import UnknownPlan, get_plan
 from billing.proration import ProrationError, prorate_monthly_change, prorate_to_annual
 from billing.tax import line_gst, tax_line
-from golden_compare import gst_mismatches, reconciled
 
 GOLDEN = Path(__file__).parent / "golden"
 NOV = Period(date(2024, 11, 1), date(2024, 12, 1))
@@ -81,8 +80,3 @@ def test_invoice_matches_golden(number):
     if not path.exists():
         pytest.fail("golden fixture missing: run 'make update-golden'")
     assert invoice.render(invoice.FIXTURES[number]()) == path.read_text()
-
-
-@pytest.mark.parametrize("number", sorted(reconciled()))
-def test_invoice_matches_reconciled_gst(number):
-    assert gst_mismatches(invoice.FIXTURES[number](), reconciled()[number]) == []

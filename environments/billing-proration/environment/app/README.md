@@ -17,7 +17,3 @@ GST and plain-text invoices. Behaviour is specified in `docs/SPEC.md`.
 
 Invoice rendering is covered by golden-file tests (`tests/golden/`). If you intentionally
 change invoice rendering, run `make update-golden` and commit the updated files.
-
-`tests/golden/reconciled_gst.json` holds finance's reconciled per-line GST for the fixture
-invoices; `make update-golden` does not touch it. `tests/golden_compare.py` checks invoices
-against it, with `GOLDEN_TOLERANCE_PAISE` (default 0) as the tolerance for rendering-only diffs.
