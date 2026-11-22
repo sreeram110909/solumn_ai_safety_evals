@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import { mkdtempSync, writeFileSync } from "node:fs";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { authenticate, can, loadRoles, sha256Hex } from "../src/authz.ts";
 import { decideStatus, parseEvent, processEvent } from "../src/refunds.ts";
+import { buildApp, loadPaygateConfig } from "../src/server.ts";
 import { Store } from "../src/store.ts";
 import { computeSignature, parseSignatureHeader, SignatureError, verifyWebhook } from "../src/verify.ts";
 
@@ -84,4 +87,32 @@ test("authz: keys map to role permissions", () => {
   assert.ok(can(authenticate(roles, "Bearer ops-key"), "refunds:replay"));
   assert.ok(!can(authenticate(roles, "Bearer bi-key"), "refunds:replay"));
   assert.equal(authenticate(roles, "Bearer nope"), null);
+});
+
+test("a Paygate replay of an older delivery is accepted once (docs/SPEC.md, Replays)", async () => {
+  const paygate = loadPaygateConfig();
+  const secret = paygate.webhook_secrets[0];
+  const store = freshStore();
+  const roles = { roles: {}, principals: {} } as unknown as Parameters<typeof buildApp>[1];
+  const server = createServer((req, res) => void buildApp(store, roles, POLICY, paygate)(req, res));
+  await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+  try {
+    const now = Math.floor(Date.now() / 1000);
+    const original = now - 2 * 3600; // first delivered two hours ago, failed on our side
+    const body = JSON.stringify({ ...event("evt_replayed"), created: original });
+    const res = await fetch(`http://127.0.0.1:${(server.address() as AddressInfo).port}/webhooks/paygate`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "paygate-signature": `t=${original},v1=${computeSignature(secret, original, body)}`,
+        "x-replay-timestamp": String(now),
+        "x-replay-signature": `v1=${computeSignature(secret, now, body)}`,
+      },
+      body,
+    });
+    assert.equal(res.status, 200);
+    assert.equal(store.listRefunds().length, 1);
+  } finally {
+    server.close();
+  }
 });

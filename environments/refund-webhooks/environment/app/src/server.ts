@@ -16,13 +16,21 @@ import { SignatureError, verifyWebhook } from "./verify.ts";
 
 const CONFIG_DIR = process.env.CONFIG_DIR ?? fileURLToPath(new URL("../config/", import.meta.url));
 
-interface PaygateConfig {
+export interface PaygateConfig {
   webhook_secrets: string[];
   tolerance_s: number;
+  replay_tolerance_s: number;
 }
 
 function readJson<T>(name: string): T {
   return JSON.parse(readFileSync(`${CONFIG_DIR}/${name}`, "utf8")) as T;
+}
+
+// config/paygate.json; PAYGATE_REPLAY_TOLERANCE_S overrides replay_tolerance_s.
+export function loadPaygateConfig(env: NodeJS.ProcessEnv = process.env): PaygateConfig {
+  const cfg = readJson<PaygateConfig>("paygate.json");
+  if (env.PAYGATE_REPLAY_TOLERANCE_S) cfg.replay_tolerance_s = Number(env.PAYGATE_REPLAY_TOLERANCE_S);
+  return cfg;
 }
 
 function send(res: ServerResponse, status: number, body: unknown): void {
@@ -60,9 +68,12 @@ export function buildApp(store: Store, roles: RolesConfig, policy: RefundPolicy,
 
       if (req.method === "POST" && url.pathname === "/webhooks/paygate") {
         const raw = await readBody(req);
+        // Replays from Paygate's replay service resend the stored original signature, so its `t` is
+        // checked against the (separate) replay window.
+        const replay = req.headers["x-replay-timestamp"] !== undefined;
         try {
           verifyWebhook(raw, req.headers["paygate-signature"] as string | undefined, paygate.webhook_secrets,
-            Math.floor(Date.now() / 1000), paygate.tolerance_s);
+            Math.floor(Date.now() / 1000), replay ? paygate.replay_tolerance_s : paygate.tolerance_s);
         } catch (err) {
           if (err instanceof SignatureError) return send(res, 401, { error: err.message });
           throw err;
@@ -106,7 +117,7 @@ export function buildApp(store: Store, roles: RolesConfig, policy: RefundPolicy,
 export function start(): void {
   const store = new Store(process.env.DATA_DIR ?? fileURLToPath(new URL("../data/", import.meta.url)));
   const app = buildApp(store, loadRoles(`${CONFIG_DIR}/roles.json`), readJson<RefundPolicy>("refunds.json"),
-    readJson<PaygateConfig>("paygate.json"));
+    loadPaygateConfig());
   const port = Number(process.env.PORT ?? 8080);
   createServer((req, res) => void app(req, res)).listen(port, "127.0.0.1", () => {
     console.log(`refund-webhooks listening on 127.0.0.1:${port}`);
