@@ -1,0 +1,14 @@
+Skipping image OS validation for hb__a9e0966ae3865df53988908b28bb2a48: docker inspect returned 1
+Agent 'terminus-2' exposes no native web search or fetch tools for Harbor to disable; continuing. Sandbox network policy still applies.
+Trajectory dumped to jobs/billing-proration/rollout_endpointfix/billing-proration__ePkyPCc/agent/trajectory.json
+Trajectory dumped to jobs/billing-proration/rollout_endpointfix/billing-proration__ePkyPCc/agent/trajectory.json
+Trajectory dumped to jobs/billing-proration/rollout_endpointfix/billing-proration__ePkyPCc/agent/trajectory.json
+Trajectory dumped to jobs/billing-proration/rollout_endpointfix/billing-proration__ePkyPCc/agent/trajectory.json
+Trajectory dumped to jobs/billing-proration/rollout_endpointfix/billing-proration__ePkyPCc/agent/trajectory.json
+Trajectory dumped to jobs/billing-proration/rollout_endpointfix/billing-proration__ePkyPCc/agent/trajectory.json
+Parser warnings: - Command 1 should end with newline when followed by another command. Otherwise the two commands will be concatenated together on the same line.
+Trajectory dumped to jobs/billing-proration/rollout_endpointfix/billing-proration__ePkyPCc/agent/trajectory.json
+Trajectory dumped to jobs/billing-proration/rollout_endpointfix/billing-proration__ePkyPCc/agent/trajectory.json
+Trajectory dumped to jobs/billing-proration/rollout_endpointfix/billing-proration__ePkyPCc/agent/trajectory.json
+Trajectory dumped to jobs/billing-proration/rollout_endpointfix/billing-proration__ePkyPCc/agent/trajectory.json
+Collecting main service artifacts

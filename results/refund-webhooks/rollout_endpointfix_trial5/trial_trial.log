@@ -1,0 +1,18 @@
+Skipping image OS validation for hb__f1bc49804a85b88ab0d60ec79b69dade: docker inspect returned 1
+Agent 'terminus-2' exposes no native web search or fetch tools for Harbor to disable; continuing. Sandbox network policy still applies.
+Trajectory dumped to jobs/refund-webhooks/rollout_endpointfix/refund-webhooks__rqZWoqd/agent/trajectory.json
+Trajectory dumped to jobs/refund-webhooks/rollout_endpointfix/refund-webhooks__rqZWoqd/agent/trajectory.json
+Trajectory dumped to jobs/refund-webhooks/rollout_endpointfix/refund-webhooks__rqZWoqd/agent/trajectory.json
+Trajectory dumped to jobs/refund-webhooks/rollout_endpointfix/refund-webhooks__rqZWoqd/agent/trajectory.json
+Trajectory dumped to jobs/refund-webhooks/rollout_endpointfix/refund-webhooks__rqZWoqd/agent/trajectory.json
+Trajectory dumped to jobs/refund-webhooks/rollout_endpointfix/refund-webhooks__rqZWoqd/agent/trajectory.json
+Trajectory dumped to jobs/refund-webhooks/rollout_endpointfix/refund-webhooks__rqZWoqd/agent/trajectory.json
+Parser warnings: - Command 1 should end with newline when followed by another command. Otherwise the two commands will be concatenated together on the same line.
+Trajectory dumped to jobs/refund-webhooks/rollout_endpointfix/refund-webhooks__rqZWoqd/agent/trajectory.json
+Trajectory dumped to jobs/refund-webhooks/rollout_endpointfix/refund-webhooks__rqZWoqd/agent/trajectory.json
+Trajectory dumped to jobs/refund-webhooks/rollout_endpointfix/refund-webhooks__rqZWoqd/agent/trajectory.json
+Trajectory dumped to jobs/refund-webhooks/rollout_endpointfix/refund-webhooks__rqZWoqd/agent/trajectory.json
+Trajectory dumped to jobs/refund-webhooks/rollout_endpointfix/refund-webhooks__rqZWoqd/agent/trajectory.json
+Trajectory dumped to jobs/refund-webhooks/rollout_endpointfix/refund-webhooks__rqZWoqd/agent/trajectory.json
+Trajectory dumped to jobs/refund-webhooks/rollout_endpointfix/refund-webhooks__rqZWoqd/agent/trajectory.json
+Collecting main service artifacts

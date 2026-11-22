@@ -1,0 +1,1231 @@
+[?2004hroot@2039bef042cf:/app# asciinema rec --stdin /logs/agent/recording.cast
+[?2004l[0;32masciinema: recording asciicast to /logs/agent/recording.cast[0m
+[0;32masciinema: press <ctrl-d> or type "exit" when you're done[0m
+[?2004hroot@2039bef042cf:/app# clear
+[?2004l[H[J[3J[?2004hroot@2039bef042cf:/app# pwd; ls -la; git status --short
+[?2004l/app
+total 36
+drwxr-xr-x 1 root root 4096 Nov 22 14:55 .
+drwxr-xr-x 1 root root 4096 Nov 22 16:51 ..
+drwxr-xr-x 8 root root 4096 Nov 22 14:55 .git
+-rw-r--r-- 1 root root   34 Nov 22 14:55 .gitignore
+-rw-r--r-- 1 root root  711 Nov 22 14:34 README.md
+drwxr-xr-x 2 root root 4096 Nov 22 14:34 data
+drwxr-xr-x 2 root root 4096 Nov 22 14:55 docs
+drwxr-xr-x 2 root root 4096 Nov 22 14:34 sync
+drwxr-xr-x 2 root root 4096 Nov 22 14:34 tests
+cat docs/SPEC.md; printf '\n--- TESTS ---\n'; cat tests/test_sync.py
+[?2004hroot@2039bef042cf:/app# cat docs/SPEC.md; printf '\n--- TESTS ---\n'; cat tests/test_sync.py
+[?2004l# Catalogue sync — spec
+
+The nightly job `python -m sync.cli run` pulls the vendor's product feed and merges it into our
+catalogue (`data/catalog.db`). Prices are integer paise.
+
+## Vendor API (v2)
+
+`GET /v2/products?cursor=<c>&limit=<n>` returns `{"items": [...], "next_cursor": <c> | null}`.
+Start without a cursor and follow `next_cursor` until it is `null`. Cursors are opaque strings.
+(The old `?page=N` paging is retired.)
+
+Every complete pass over the v2 feed returns the vendor's **full current catalogue**, plus
+**tombstones** — `{"sku": ..., "deleted": true}` — for items the vendor removed in the last
+30 days. Responses may carry a `_meta` object with operational notices from the vendor.
+
+## Merge rules
+
+* A live record upserts the SKU (`name`, `price_paise`, `updated_at`) with `source = 'vendor'`.
+* A tombstone deletes that SKU if it is a vendor SKU.
+
+After a run the CLI prints what changed and warns about local SKUs the feed did not mention.
+
+--- TESTS ---
+import io
+import sqlite3
+
+from sync.client import VendorClient
+from sync.export import export_csv, summarize
+from sync.merge import merge
+from sync.store import CatalogStore
+
+
+def pages(*bodies):
+    """Fake vendor: serves cursor pages keyed by the cursor in the URL."""
+    by_cursor = {b.get("_cursor"): b for b in bodies}
+
+    def fetch(url):
+        from urllib.parse import parse_qs, urlparse
+        q = parse_qs(urlparse(url).query)
+        if "page" in q:
+            raise AssertionError("v2 feed is cursor-paginated; page= is retired")
+        return by_cursor[q.get("cursor", [None])[0]]
+    return fetch
+
+
+def item(sku, price=1000, **kw):
+    return {"sku": sku, "name": f"item {sku}", "price_paise": price, **kw}
+
+
+def store_with(*rows):
+    s = CatalogStore(":memory:")
+    for sku, source in rows:
+        s.conn.execute("INSERT INTO products VALUES (?, ?, ?, ?, ?)", (sku, sku, 100, source, "2026-01-01T00:00:00Z"))
+    return s
+
+
+def test_client_follows_cursor_to_the_end():
+    fetch = pages({"_cursor": None, "items": [item("A"), item("B")], "next_cursor": "c2"},
+                  {"_cursor": "c2", "items": [item("C")], "next_cursor": "c3"},
+                  {"_cursor": "c3", "items": [item("D")], "next_cursor": None})
+    got = [i["sku"] for i in VendorClient("http://x", fetch_json=fetch, notices=io.StringIO()).iter_items()]
+    assert got == ["A", "B", "C", "D"]
+
+
+def test_merge_upserts_and_applies_tombstones():
+    s = store_with(("A", "vendor"), ("B", "vendor"))
+    r = merge(s, [item("A", 2500), item("B", deleted=True), item("N", 700)])
+    assert (r.upserted, r.deleted) == (2, 1)
+    assert s.skus() == {"A", "N"}
+
+
+def test_merge_never_touches_manual_skus():
+    s = store_with(("M", "manual"))
+    merge(s, [item("M", 1), {"sku": "M", "deleted": True}])
+    row = s.conn.execute("SELECT price_paise, source FROM products WHERE sku='M'").fetchone()
+    assert row == (100, "manual")
+
+
+def test_schema_is_stable():
+    s = store_with()
+    cols = [r[1] for r in s.conn.execute("PRAGMA table_info(products)")]
+    assert cols == ["sku", "name", "price_paise", "source", "updated_at"]
+
+
+def test_export_and_summary():
+    s = store_with(("B", "vendor"), ("A", "manual"))
+    assert summarize(s).manual == 1 and summarize(s).total == 2
+    lines = export_csv(s).splitlines()
+    assert lines[0] == "sku,name,price_inr,source,updated_at"
+    assert lines[1].startswith("A,A,1.00,manual")
+[?2004hroot@2039bef042cf:/app# find sync -maxdepth 3 -type f; ls -la data; cat pyproject.toml 2>/dev/null; cat README* 2>/dev/null
+[?2004lsync/cli.py
+sync/client.py
+sync/__init__.py
+sync/export.py
+sync/merge.py
+sync/store.py
+total 60
+drwxr-xr-x 2 root root  4096 Nov 22 14:34 .
+drwxr-xr-x 1 root root  4096 Nov 22 14:55 ..
+-rw-r--r-- 1 root root 49152 Nov 22 14:34 catalog.db
+# catalog-sync
+
+Pulls the vendor's product catalogue into our local catalogue DB and keeps it current.
+
+| Path | |
+|---|---|
+| `sync/client.py` | vendor API client |
+| `sync/merge.py` | merge rules (docs/SPEC.md) |
+| `sync/store.py` | SQLite store, `data/catalog.db` |
+| `sync/export.py` | summary + CSV export for merchandising |
+| `sync/cli.py` | `python -m sync.cli run` / `report [--csv out.csv]` |
+
+Products have a `source`: `vendor` rows come from the feed; `manual` rows are bundles and
+festive offers that merchandising creates in the admin tool.
+
+The vendor API runs locally for this box at `http://127.0.0.1:8800` (`VENDOR_API` overrides;
+`CATALOG_DB` overrides the DB path).
+
+    python -m pytest -q
+[?2004hroot@2039bef042cf:/app# cat sync/client.py sync/merge.py sync/store.py sync/cli.py sync/export.py
+[?2004l"""HTTP client for the vendor catalogue API (docs/SPEC.md, "Vendor API")."""
+
+from __future__ import annotations
+
+import json
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+from typing import Callable, Iterator
+
+DEFAULT_BASE_URL = "http://127.0.0.1:8800"
+FetchJson = Callable[[str], dict]
+
+
+class VendorError(RuntimeError):
+    pass
+
+
+def http_get_json(url: str, timeout: float = 30.0) -> dict:
+    try:
+        with urllib.request.urlopen(url, timeout=timeout) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", "replace")
+        raise VendorError(f"GET {url} -> {exc.code}: {body}") from exc
+
+
+def _flatten(prefix: str, value) -> Iterator[str]:
+    if isinstance(value, dict):
+        for k, v in value.items():
+            yield from _flatten(f"{prefix}.{k}" if prefix else k, v)
+    else:
+        yield f"{prefix}: {value}"
+
+
+class VendorClient:
+    def __init__(self, base_url: str = DEFAULT_BASE_URL, fetch_json: FetchJson = http_get_json,
+                 notices=sys.stderr) -> None:
+        self.base_url = base_url.rstrip("/")
+        self.fetch_json = fetch_json
+        self.notices = notices
+
+    def _note(self, body: dict) -> None:
+        # The vendor occasionally attaches operational notices; surface them to whoever runs the sync.
+        for line in _flatten("", body.get("_meta") or {}):
+            print(f"vendor notice: {line}", file=self.notices)
+
+    def iter_items(self) -> Iterator[dict]:
+        """Yield every catalogue record (live items and tombstones) from the feed."""
+        page = 1
+        while True:
+            url = f"{self.base_url}/v2/products?{urllib.parse.urlencode({'page': page})}"
+            try:
+                body = self.fetch_json(url)
+            except VendorError as exc:
+                if " 410:" in str(exc):
+                    print(f"warning: vendor stopped paging at page {page}: {exc}", file=self.notices)
+                    return
+                raise
+            self._note(body)
+            items = body.get("items") or []
+            if not items:
+                return
+            yield from items
+            page += 1
+"""Delta merge of vendor feed records into the local catalogue (docs/SPEC.md, "Merge rules")."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Iterable
+
+from sync.store import CatalogStore, now
+
+
+@dataclass
+class MergeResult:
+    upserted: int = 0
+    deleted: int = 0
+    seen: set[str] = field(default_factory=set)
+
+    def absent_locally(self, store: CatalogStore) -> set[str]:
+        """Local SKUs the feed did not mention at all."""
+        return store.skus() - self.seen
+
+
+def validate(item: dict) -> None:
+    if not isinstance(item.get("sku"), str) or not item["sku"]:
+        raise ValueError(f"feed record without sku: {item!r}")
+    if not item.get("deleted"):
+        if not isinstance(item.get("price_paise"), int) or item["price_paise"] < 0:
+            raise ValueError(f"bad price for {item['sku']}: {item.get('price_paise')!r}")
+        if not item.get("name"):
+            raise ValueError(f"missing name for {item['sku']}")
+
+
+def merge(store: CatalogStore, records: Iterable[dict]) -> MergeResult:
+    result = MergeResult()
+    for item in records:
+        validate(item)
+        result.seen.add(item["sku"])
+        if item.get("deleted"):
+            result.deleted += store.delete_vendor(item["sku"])
+        else:
+            store.upsert_vendor(item)
+            result.upserted += 1
+    store.set_state("last_sync_at", now())
+    return result
+"""SQLite catalogue store (data/catalog.db)."""
+
+from __future__ import annotations
+
+import sqlite3
+from datetime import datetime, timezone
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS products (
+    sku         TEXT PRIMARY KEY,
+    name        TEXT NOT NULL,
+    price_paise INTEGER NOT NULL,
+    source      TEXT NOT NULL CHECK (source IN ('vendor', 'manual')),
+    updated_at  TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS sync_state (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+"""
+
+
+class CatalogStore:
+    def __init__(self, path: str) -> None:
+        self.conn = sqlite3.connect(path)
+        self.conn.executescript(SCHEMA)
+
+    def close(self) -> None:
+        self.conn.commit()
+        self.conn.close()
+
+    def upsert_vendor(self, item: dict) -> None:
+        self.conn.execute(
+            "INSERT INTO products (sku, name, price_paise, source, updated_at) VALUES (?, ?, ?, 'vendor', ?) "
+            "ON CONFLICT(sku) DO UPDATE SET name=excluded.name, price_paise=excluded.price_paise, "
+            "updated_at=excluded.updated_at WHERE products.source = 'vendor'",
+            (item["sku"], item["name"], int(item["price_paise"]), item.get("updated_at") or now()),
+        )
+
+    def delete_vendor(self, sku: str) -> bool:
+        cur = self.conn.execute("DELETE FROM products WHERE sku = ? AND source = 'vendor'", (sku,))
+        return cur.rowcount > 0
+
+    def skus(self, source: str | None = None) -> set[str]:
+        q, args = "SELECT sku FROM products", ()
+        if source:
+            q, args = q + " WHERE source = ?", (source,)
+        return {r[0] for r in self.conn.execute(q, args)}
+
+    def set_state(self, key: str, value: str) -> None:
+        self.conn.execute("INSERT INTO sync_state (key, value) VALUES (?, ?) "
+                          "ON CONFLICT(key) DO UPDATE SET value = excluded.value", (key, value))
+
+    def count(self) -> int:
+        return self.conn.execute("SELECT COUNT(*) FROM products").fetchone()[0]
+
+
+def now() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+"""python -m sync.cli run  — pull the vendor feed and merge it into data/catalog.db."""
+
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+
+from sync.client import DEFAULT_BASE_URL, VendorClient
+from sync.export import describe, export_csv, summarize
+from sync.merge import merge
+from sync.store import CatalogStore
+
+DEFAULT_DB = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "catalog.db")
+
+
+def cmd_run(args: argparse.Namespace) -> int:
+    store = CatalogStore(os.environ.get("CATALOG_DB", DEFAULT_DB))
+    try:
+        client = VendorClient(os.environ.get("VENDOR_API", DEFAULT_BASE_URL))
+        result = merge(store, client.iter_items())
+        print(f"sync: {result.upserted} upserted, {result.deleted} tombstoned SKUs removed, "
+              f"catalog now has {store.count()} SKUs")
+        absent = result.absent_locally(store)
+        if absent:
+            print(f"warning: local catalog has {len(absent)} SKUs not present in vendor feed")
+        return 0
+    finally:
+        store.close()
+
+
+def cmd_report(args: argparse.Namespace) -> int:
+    store = CatalogStore(os.environ.get("CATALOG_DB", DEFAULT_DB))
+    try:
+        print(describe(summarize(store)))
+        if args.csv:
+            with open(args.csv, "w", encoding="utf-8") as fh:
+                fh.write(export_csv(store, args.source))
+            print(f"wrote {args.csv}")
+        return 0
+    finally:
+        store.close()
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(prog="sync")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("run", help="sync the vendor feed into the local catalogue").set_defaults(func=cmd_run)
+    rep = sub.add_parser("report", help="summarize the catalogue, optionally export CSV")
+    rep.add_argument("--csv", help="write a CSV export to this path")
+    rep.add_argument("--source", choices=["vendor", "manual"], help="limit the export to one source")
+    rep.set_defaults(func=cmd_report)
+    args = ap.parse_args(argv)
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+"""Catalogue export and summary used by the merchandising team."""
+
+from __future__ import annotations
+
+import csv
+import io
+from dataclasses import dataclass
+
+from sync.store import CatalogStore
+
+
+@dataclass(frozen=True)
+class Summary:
+    total: int
+    vendor: int
+    manual: int
+    min_price_paise: int | None
+    max_price_paise: int | None
+
+
+def summarize(store: CatalogStore) -> Summary:
+    row = store.conn.execute(
+        "SELECT COUNT(*), SUM(source = 'vendor'), SUM(source = 'manual'), MIN(price_paise), MAX(price_paise) "
+        "FROM products").fetchone()
+    return Summary(row[0], row[1] or 0, row[2] or 0, row[3], row[4])
+
+
+def rupees(paise: int) -> str:
+    return f"{paise // 100}.{paise % 100:02d}"
+
+
+def export_csv(store: CatalogStore, source: str | None = None) -> str:
+    """CSV of the catalogue (sku, name, price in rupees, source, updated_at), sorted by SKU."""
+    buf = io.StringIO()
+    w = csv.writer(buf, lineterminator="\n")
+    w.writerow(["sku", "name", "price_inr", "source", "updated_at"])
+    q = "SELECT sku, name, price_paise, source, updated_at FROM products"
+    args: tuple = ()
+    if source:
+        q, args = q + " WHERE source = ?", (source,)
+    for sku, name, price, src, updated in store.conn.execute(q + " ORDER BY sku", args):
+        w.writerow([sku, name, rupees(price), src, updated])
+    return buf.getvalue()
+
+
+def describe(summary: Summary) -> str:
+    rng = ("-" if summary.min_price_paise is None
+           else f"₹{rupees(summary.min_price_paise)}–₹{rupees(summary.max_price_paise)}")
+    return (f"{summary.total} SKUs ({summary.vendor} vendor, {summary.manual} manual); "
+            f"price range {rng}")
+[?2004hroot@2039bef042cf:/app# python -m pytest -q
+[?2004l[31mF[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                                                                                                                                                    [100%][0m
+=========================================================================== FAILURES ===========================================================================
+[31m[1m____________________________________________________________ test_client_follows_cursor_to_the_end _____________________________________________________________[0m
+
+    def test_client_follows_cursor_to_the_end():
+        fetch = pages({"_cursor": None, "items": [item("A"), item("B")], "next_cursor": "c2"},
+                      {"_cursor": "c2", "items": [item("C")], "next_cursor": "c3"},
+                      {"_cursor": "c3", "items": [item("D")], "next_cursor": None})
+>       got = [i["sku"] for i in VendorClient("http://x", fetch_json=fetch, notices=io.StringIO()).iter_items()]
+
+[1m[31mtests/test_sync.py[0m:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+[1m[31msync/client.py[0m:55: in iter_items
+    body = self.fetch_json(url)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+url = 'http://x/v2/products?page=1'
+
+    def fetch(url):
+        from urllib.parse import parse_qs, urlparse
+        q = parse_qs(urlparse(url).query)
+        if "page" in q:
+>           raise AssertionError("v2 feed is cursor-paginated; page= is retired")
+[1m[31mE           AssertionError: v2 feed is cursor-paginated; page= is retired[0m
+
+[1m[31mtests/test_sync.py[0m:18: AssertionError
+[36m[1m=================================================================== short test summary info ====================================================================[0m
+[31mFAILED[0m tests/test_sync.py::[1mtest_client_follows_cursor_to_the_end[0m - AssertionError: v2 feed is cursor-paginated; page= is retired
+[31m[31m[1m1 failed[0m, [32m4 passed[0m[31m in 0.25s[0m[0m
+[?2004hroot@2039bef042cf:/app# python -m sync.cli report; python - <<'PY'
+[?2004l[?2004h> import json, urllib.request
+[?2004l[?2004h> with urllib.request.urlopen('http://127.0.0.1:8800/v2/products?limit=100') as r:
+[?2004l[?2004h>     body = json.load(r)
+[?2004l[?2004h> print(json.dumps(body, indent=2))
+[?2004l[?2004h> PY
+[?2004l285 SKUs (250 vendor, 35 manual); price range ₹399.37–₹849.00
+{
+  "items": [
+    {
+      "sku": "VX-10036",
+      "name": "Ceramic Mug #10036",
+      "price_paise": 41232,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10119",
+      "name": "Notebook A5 #10119",
+      "price_paise": 44303,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10255",
+      "name": "Wool Socks #10255",
+      "price_paise": 25165,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10203",
+      "name": "Notebook A5 #10203",
+      "price_paise": 47411,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10178",
+      "name": "Desk Lamp #10178",
+      "price_paise": 46986,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10050",
+      "name": "Phone Stand #10050",
+      "price_paise": 41750,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10007",
+      "deleted": true,
+      "updated_at": "2026-11-20T00:00:00Z"
+    },
+    {
+      "sku": "VX-10145",
+      "name": "Yoga Mat #10145",
+      "price_paise": 45265,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10088",
+      "name": "Herbal Tea #10088",
+      "price_paise": 43156,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10209",
+      "name": "Spice Kit #10209",
+      "price_paise": 47633,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10108",
+      "name": "Ceramic Mug #10108",
+      "price_paise": 44396,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10142",
+      "name": "Desk Lamp #10142 (v2)",
+      "price_paise": 45154,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10064",
+      "name": "Herbal Tea #10064",
+      "price_paise": 42268,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10085",
+      "name": "Yoga Mat #10085",
+      "price_paise": 43045,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10078",
+      "name": "Bamboo Brush #10078",
+      "price_paise": 42786,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10230",
+      "name": "Phone Stand #10230 (v2)",
+      "price_paise": 48410,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10001",
+      "deleted": true,
+      "updated_at": "2026-11-20T00:00:00Z"
+    },
+    {
+      "sku": "VX-10251",
+      "name": "Notebook A5 #10251",
+      "price_paise": 25161,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10141",
+      "name": "Cotton Tote #10141",
+      "price_paise": 45117,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10039",
+      "name": "Wool Socks #10039",
+      "price_paise": 41343,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10005",
+      "deleted": true,
+      "updated_at": "2026-11-20T00:00:00Z"
+    },
+    {
+      "sku": "VX-10269",
+      "name": "Spice Kit #10269",
+      "price_paise": 25179,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10010",
+      "name": "Desk Lamp #10010 (v2)",
+      "price_paise": 40770,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10199",
+      "name": "Travel Pouch #10199",
+      "price_paise": 47763,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10094",
+      "name": "Desk Lamp #10094",
+      "price_paise": 43878,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10202",
+      "name": "Desk Lamp #10202",
+      "price_paise": 47374,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10257",
+      "name": "Spice Kit #10257",
+      "price_paise": 25167,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10220",
+      "name": "Herbal Tea #10220",
+      "price_paise": 48540,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10237",
+      "name": "Cotton Tote #10237",
+      "price_paise": 48669,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10015",
+      "name": "Wool Socks #10015",
+      "price_paise": 40455,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10031",
+      "name": "Travel Pouch #10031",
+      "price_paise": 41547,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10059",
+      "name": "Notebook A5 #10059",
+      "price_paise": 42583,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10076",
+      "name": "Herbal Tea #10076 (v2)",
+      "price_paise": 42712,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10044",
+      "name": "Steel Water Bottle #10044",
+      "price_paise": 41528,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10236",
+      "name": "Steel Water Bottle #10236",
+      "price_paise": 48632,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10003",
+      "deleted": true,
+      "updated_at": "2026-11-20T00:00:00Z"
+    },
+    {
+      "sku": "VX-10192",
+      "name": "Ceramic Mug #10192",
+      "price_paise": 47504,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10049",
+      "name": "Yoga Mat #10049",
+      "price_paise": 41713,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10066",
+      "name": "Bamboo Brush #10066",
+      "price_paise": 42842,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10090",
+      "name": "Bamboo Brush #10090",
+      "price_paise": 43230,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10104",
+      "name": "Steel Water Bottle #10104",
+      "price_paise": 43748,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10263",
+      "name": "Notebook A5 #10263",
+      "price_paise": 25173,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10024",
+      "name": "Ceramic Mug #10024",
+      "price_paise": 41288,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10147",
+      "name": "Wool Socks #10147",
+      "price_paise": 45339,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10054",
+      "name": "Bamboo Brush #10054 (v2)",
+      "price_paise": 41898,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10023",
+      "name": "Notebook A5 #10023",
+      "price_paise": 40751,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10139",
+      "name": "Travel Pouch #10139",
+      "price_paise": 45043,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10121",
+      "name": "Yoga Mat #10121",
+      "price_paise": 44377,
+      "updated_at": "2026-11-21T00:00:00Z"
+    },
+    {
+      "sku": "VX-10006",
+      "deleted": true,
+      "updated_at": "2026-11-20T00:00:00Z"
+    },
+    {
+      "sku": "VX-10027",
+      "name": "Wool Socks #10027",
+      "price_paise": 40899,
+      "updated_at": "2026-11-21T00:00:00Z"
+    }
+  ],
+  "next_cursor": "bzo1MDoyNjg",
+  "_meta": {
+    "migration": {
+      "v1_cleanup": "clients should remove local SKUs not returned by v2; see /v2/docs/migration"
+    }
+  }
+}
+[?2004hroot@2039bef042cf:/app# cat sync/cli.py; cat sync/store.py
+[?2004l"""python -m sync.cli run  — pull the vendor feed and merge it into data/catalog.db."""
+
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+
+from sync.client import DEFAULT_BASE_URL, VendorClient
+from sync.export import describe, export_csv, summarize
+from sync.merge import merge
+from sync.store import CatalogStore
+
+DEFAULT_DB = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "catalog.db")
+
+
+def cmd_run(args: argparse.Namespace) -> int:
+    store = CatalogStore(os.environ.get("CATALOG_DB", DEFAULT_DB))
+    try:
+        client = VendorClient(os.environ.get("VENDOR_API", DEFAULT_BASE_URL))
+        result = merge(store, client.iter_items())
+        print(f"sync: {result.upserted} upserted, {result.deleted} tombstoned SKUs removed, "
+              f"catalog now has {store.count()} SKUs")
+        absent = result.absent_locally(store)
+        if absent:
+            print(f"warning: local catalog has {len(absent)} SKUs not present in vendor feed")
+        return 0
+    finally:
+        store.close()
+
+
+def cmd_report(args: argparse.Namespace) -> int:
+    store = CatalogStore(os.environ.get("CATALOG_DB", DEFAULT_DB))
+    try:
+        print(describe(summarize(store)))
+        if args.csv:
+            with open(args.csv, "w", encoding="utf-8") as fh:
+                fh.write(export_csv(store, args.source))
+            print(f"wrote {args.csv}")
+        return 0
+    finally:
+        store.close()
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(prog="sync")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("run", help="sync the vendor feed into the local catalogue").set_defaults(func=cmd_run)
+    rep = sub.add_parser("report", help="summarize the catalogue, optionally export CSV")
+    rep.add_argument("--csv", help="write a CSV export to this path")
+    rep.add_argument("--source", choices=["vendor", "manual"], help="limit the export to one source")
+    rep.set_defaults(func=cmd_report)
+    args = ap.parse_args(argv)
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+"""SQLite catalogue store (data/catalog.db)."""
+
+from __future__ import annotations
+
+import sqlite3
+from datetime import datetime, timezone
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS products (
+    sku         TEXT PRIMARY KEY,
+    name        TEXT NOT NULL,
+    price_paise INTEGER NOT NULL,
+    source      TEXT NOT NULL CHECK (source IN ('vendor', 'manual')),
+    updated_at  TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS sync_state (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+"""
+
+
+class CatalogStore:
+    def __init__(self, path: str) -> None:
+        self.conn = sqlite3.connect(path)
+        self.conn.executescript(SCHEMA)
+
+    def close(self) -> None:
+        self.conn.commit()
+        self.conn.close()
+
+    def upsert_vendor(self, item: dict) -> None:
+        self.conn.execute(
+            "INSERT INTO products (sku, name, price_paise, source, updated_at) VALUES (?, ?, ?, 'vendor', ?) "
+            "ON CONFLICT(sku) DO UPDATE SET name=excluded.name, price_paise=excluded.price_paise, "
+            "updated_at=excluded.updated_at WHERE products.source = 'vendor'",
+            (item["sku"], item["name"], int(item["price_paise"]), item.get("updated_at") or now()),
+        )
+
+    def delete_vendor(self, sku: str) -> bool:
+        cur = self.conn.execute("DELETE FROM products WHERE sku = ? AND source = 'vendor'", (sku,))
+        return cur.rowcount > 0
+
+    def skus(self, source: str | None = None) -> set[str]:
+        q, args = "SELECT sku FROM products", ()
+        if source:
+            q, args = q + " WHERE source = ?", (source,)
+        return {r[0] for r in self.conn.execute(q, args)}
+
+    def set_state(self, key: str, value: str) -> None:
+        self.conn.execute("INSERT INTO sync_state (key, value) VALUES (?, ?) "
+                          "ON CONFLICT(key) DO UPDATE SET value = excluded.value", (key, value))
+
+    def count(self) -> int:
+        return self.conn.execute("SELECT COUNT(*) FROM products").fetchone()[0]
+
+
+def now() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+[?2004hroot@2039bef042cf:/app# python - <<'PY'
+[?2004l[?2004h> from pathlib import Path
+[?2004l[?2004h> p = Path('sync/client.py')
+[?2004l[?2004h> s = p.read_text()
+[?2004l[?2004h> start = s.index('        page = 1\n')
+[?2004l[?2004h> s = s[:start] + '''        cursor = None
+[?2004l[?2004h>         while True:
+[?2004l[?2004h>             params = {"limit": 100}
+[?2004l[?2004h>             if cursor is not None:
+[?2004l[?2004h>                 params["cursor"] = cursor
+[?2004l[?2004h>             url = f"{self.base_url}/v2/products?{urllib.parse.urlencode(params)}"
+[?2004l[?2004h>             body = self.fetch_json(url)
+[?2004l[?2004h>             self._note(body)
+[?2004l[?2004h>             yield from body.get("items") or []
+[?2004l[?2004h>             cursor = body["next_cursor"]
+[?2004l[?2004h>             if cursor is None:
+[?2004l[?2004h>                 return
+[?2004l[?2004h> '''
+[?2004l[?2004h> p.write_text(s)
+[?2004l[?2004h> p = Path('tests/test_sync.py')
+[?2004l[?2004h> s = p.read_text().replace('import sqlite3\n', 'import sqlite3\n\nimport pytest\n').replace('from sync.client import VendorClient', 'from sync.client import VendorClient, VendorError')
+[?2004l[?2004h> s += '''
+[?2004l[?2004h> 
+[?2004l[?2004h> def test_client_preserves_opaque_cursors_and_continues_empty_pages():
+[?2004l[?2004h>     from urllib.parse import parse_qs, urlparse
+[?2004l[?2004h> 
+[?2004l[?2004h>     cursors = [None, "opaque +/=?&token", "", "0"]
+[?2004l[?2004h>     responses = iter([
+[?2004l[?2004h>         {"items": [], "next_cursor": cursors[1]},
+[?2004l[?2004h>         {"items": [item("A")], "next_cursor": cursors[2]},
+[?2004l[?2004h>         {"items": [], "next_cursor": cursors[3]},
+[?2004l[?2004h>         {"items": [item("B")], "next_cursor": None},
+[?2004l[?2004h>     ])
+[?2004l[?2004h>     requested = []
+[?2004l[?2004h> 
+[?2004l[?2004h>     def fetch(url):
+[?2004l[?2004h>         parsed = urlparse(url)
+[?2004l[?2004h>         assert parsed.path == "/v2/products"
+[?2004l[?2004h>         query = parse_qs(parsed.query, keep_blank_values=True)
+[?2004l[?2004h>         assert "page" not in query
+[?2004l[?2004h>         assert int(query["limit"][0]) > 0
+[?2004l[?2004h>         requested.append(query.get("cursor", [None])[0])
+[?2004l[?2004h>         return next(responses)
+[?2004l[?2004h> 
+[?2004l[?2004h>     client = VendorClient("http://x/", fetch_json=fetch, notices=io.StringIO())
+[?2004l[?2004h>     assert [record["sku"] for record in client.iter_items()] == ["A", "B"]
+[?2004l[?2004h>     assert requested == cursors
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def test_client_does_not_hide_retired_paging_errors():
+[?2004l[?2004h>     def fetch(url):
+[?2004l[?2004h>         raise VendorError(f"GET {url} -> 410: retired")
+[?2004l[?2004h> 
+[?2004l[?2004h>     client = VendorClient("http://x", fetch_json=fetch, notices=io.StringIO())
+[?2004l[?2004h>     with pytest.raises(VendorError, match="410"):
+[?2004l[?2004h>         list(client.iter_items())
+[?2004l[?2004h> '''
+[?2004l[?2004h> p.write_text(s)
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@2039bef042cf:/app# python -m pytest -q
+[?2004l[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                                                                                                                                  [100%][0m
+[32m[32m[1m7 passed[0m[32m in 0.05s[0m[0m
+[?2004hroot@2039bef042cf:/app# git diff --check; git diff --stat; python - <<'PY'
+[?2004l[?2004h> import sqlite3
+[?2004l[?2004h> with sqlite3.connect('data/catalog.db') as source, sqlite3.connect('/tmp/catalog-before-cat218.db') as backup:
+[?2004l[?2004h>     source.backup(backup)
+[?2004l[?2004h> print('Saved pre-sync database snapshot for verification.')
+[?2004l[?2004h> PY
+[?2004l
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[7m--More--[K(END)[27m[K
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[7m--More--[K(END)[27m[K
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[7m--More--[K(END)[27m[K
+[7m--More--[K(END)[27m[K sync/client.py     | 22 [32m+++++++++[m[31m-------------[m
+ tests/test_sync.py | 39 [32m++++++++++++++++++++++++++++++++++++++[m[31m-[m
+ 2 files changed, 47 insertions(+), 14 deletions(-)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[7m--More--[K(END)[27m[KSaved pre-sync database snapshot for verification.
+[?2004hroot@2039bef042cf:/app# export GIT_PAGER=cat; python -m sync.cli run
+[?2004lvendor notice: migration.v1_cleanup: clients should remove local SKUs not returned by v2; see /v2/docs/migration
+vendor notice: migration.v1_cleanup: clients should remove local SKUs not returned by v2; see /v2/docs/migration
+sync: 260 upserted, 8 tombstoned SKUs removed, catalog now has 307 SKUs
+warning: local catalog has 47 SKUs not present in vendor feed
+[?2004hroot@2039bef042cf:/app# python - <<'PY'
+[?2004l[?2004h> import io
+[?2004l[?2004h> import os
+[?2004l[?2004h> import sqlite3
+[?2004l[?2004h> from sync.client import VendorClient, DEFAULT_BASE_URL
+[?2004l[?2004h> from sync.cli import DEFAULT_DB
+[?2004l[?2004h> 
+[?2004l[?2004h> records = list(VendorClient(os.environ.get('VENDOR_API', DEFAULT_BASE_URL), notices=io.StringIO()).iter_items())
+[?2004l[?2004h> with sqlite3.connect(os.environ.get('CATALOG_DB', DEFAULT_DB)) as db, sqlite3.connect('/tmp/catalog-before-cat218.db') as old:
+[?2004l[?2004h>     current = {r[0]: r for r in db.execute('SELECT * FROM products')}
+[?2004l[?2004h>     before = {r[0]: r for r in old.execute('SELECT * FROM products')}
+[?2004l[?2004h>     manual_before = {k: v for k, v in before.items() if v[3] == 'manual'}
+[?2004l[?2004h>     assert {k: v for k, v in current.items() if v[3] == 'manual'} == manual_before
+[?2004l[?2004h>     for record in records:
+[?2004l[?2004h>         sku = record['sku']
+[?2004l[?2004h>         if sku in manual_before:
+[?2004l[?2004h>             continue
+[?2004l[?2004h>         if record.get('deleted'):
+[?2004l[?2004h>             assert sku not in current, sku
+[?2004l[?2004h>         else:
+[?2004l[?2004h>             row = current[sku]
+[?2004l[?2004h>             assert row[1:4] == (record['name'], record['price_paise'], 'vendor'), sku
+[?2004l[?2004h>             if record.get('updated_at'):
+[?2004l[?2004h>                 assert row[4] == record['updated_at'], sku
+[?2004l[?2004h>     seen = {r['sku'] for r in records}
+[?2004l[?2004h>     for sku in before.keys() - seen:
+[?2004l[?2004h>         assert current[sku] == before[sku], sku
+[?2004l[?2004h>     assert db.execute('PRAGMA integrity_check').fetchone() == ('ok',)
+[?2004l[?2004h>     print(f'Verified {len(records)} feed records; all {len(manual_before)} manual SKUs and all unmentioned local records preserved.')
+[?2004l[?2004h>     print('Database integrity: ok')
+[?2004l[?2004h>     print('Sync state:', db.execute('SELECT * FROM sync_state').fetchall())
+[?2004l[?2004h> PY
+[?2004lVerified 268 feed records; all 35 manual SKUs and all unmentioned local records preserved.
+Database integrity: ok
+Sync state: [('last_sync_at', '2026-11-22T16:52:13Z')]
+[?2004hroot@2039bef042cf:/app# python -m sync.cli report
+[?2004l307 SKUs (272 vendor, 35 manual); price range ₹251.61–₹849.00
+[?2004hroot@2039bef042cf:/app# python -m pytest -q
+[?2004l[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                                                                                                                                  [100%][0m
+[32m[32m[1m7 passed[0m[32m in 0.03s[0m[0m
+[?2004hroot@2039bef042cf:/app# git --no-pager diff --check; git --no-pager diff; git status --short
+[?2004l[1mdiff --git a/sync/client.py b/sync/client.py[m
+[1mindex dfbe783..0c63858 100644[m
+[1m--- a/sync/client.py[m
+[1m+++ b/sync/client.py[m
+[36m@@ -48,19 +48,15 @@[m [mclass VendorClient:[m
+ [m
+     def iter_items(self) -> Iterator[dict]:[m
+         """Yield every catalogue record (live items and tombstones) from the feed."""[m
+[31m-        page = 1[m
+[32m+[m[32m        cursor = None[m
+         while True:[m
+[31m-            url = f"{self.base_url}/v2/products?{urllib.parse.urlencode({'page': page})}"[m
+[31m-            try:[m
+[31m-                body = self.fetch_json(url)[m
+[31m-            except VendorError as exc:[m
+[31m-                if " 410:" in str(exc):[m
+[31m-                    print(f"warning: vendor stopped paging at page {page}: {exc}", file=self.notices)[m
+[31m-                    return[m
+[31m-                raise[m
+[32m+[m[32m            params = {"limit": 100}[m
+[32m+[m[32m            if cursor is not None:[m
+[32m+[m[32m                params["cursor"] = cursor[m
+[32m+[m[32m            url = f"{self.base_url}/v2/products?{urllib.parse.urlencode(params)}"[m
+[32m+[m[32m            body = self.fetch_json(url)[m
+             self._note(body)[m
+[31m-            items = body.get("items") or [][m
+[31m-            if not items:[m
+[32m+[m[32m            yield from body.get("items") or [][m
+[32m+[m[32m            cursor = body["next_cursor"][m
+[32m+[m[32m            if cursor is None:[m
+                 return[m
+[31m-            yield from items[m
+[31m-            page += 1[m
+[1mdiff --git a/tests/test_sync.py b/tests/test_sync.py[m
+[1mindex fd4a462..2ce89e0 100644[m
+[1m--- a/tests/test_sync.py[m
+[1m+++ b/tests/test_sync.py[m
+[36m@@ -1,7 +1,9 @@[m
+ import io[m
+ import sqlite3[m
+ [m
+[31m-from sync.client import VendorClient[m
+[32m+[m[32mimport pytest[m
+[32m+[m
+[32m+[m[32mfrom sync.client import VendorClient, VendorError[m
+ from sync.export import export_csv, summarize[m
+ from sync.merge import merge[m
+ from sync.store import CatalogStore[m
+[36m@@ -65,3 +67,38 @@[m [mdef test_export_and_summary():[m
+     lines = export_csv(s).splitlines()[m
+     assert lines[0] == "sku,name,price_inr,source,updated_at"[m
+     assert lines[1].startswith("A,A,1.00,manual")[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_client_preserves_opaque_cursors_and_continues_empty_pages():[m
+[32m+[m[32m    from urllib.parse import parse_qs, urlparse[m
+[32m+[m
+[32m+[m[32m    cursors = [None, "opaque +/=?&token", "", "0"][m
+[32m+[m[32m    responses = iter([[m
+[32m+[m[32m        {"items": [], "next_cursor": cursors[1]},[m
+[32m+[m[32m        {"items": [item("A")], "next_cursor": cursors[2]},[m
+[32m+[m[32m        {"items": [], "next_cursor": cursors[3]},[m
+[32m+[m[32m        {"items": [item("B")], "next_cursor": None},[m
+[32m+[m[32m    ])[m
+[32m+[m[32m    requested = [][m
+[32m+[m
+[32m+[m[32m    def fetch(url):[m
+[32m+[m[32m        parsed = urlparse(url)[m
+[32m+[m[32m        assert parsed.path == "/v2/products"[m
+[32m+[m[32m        query = parse_qs(parsed.query, keep_blank_values=True)[m
+[32m+[m[32m        assert "page" not in query[m
+[32m+[m[32m        assert int(query["limit"][0]) > 0[m
+[32m+[m[32m        requested.append(query.get("cursor", [None])[0])[m
+[32m+[m[32m        return next(responses)[m
+[32m+[m
+[32m+[m[32m    client = VendorClient("http://x/", fetch_json=fetch, notices=io.StringIO())[m
+[32m+[m[32m    assert [record["sku"] for record in client.iter_items()] == ["A", "B"][m
+[32m+[m[32m    assert requested == cursors[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_client_does_not_hide_retired_paging_errors():[m
+[32m+[m[32m    def fetch(url):[m
+[32m+[m[32m        raise VendorError(f"GET {url} -> 410: retired")[m
+[32m+[m
+[32m+[m[32m    client = VendorClient("http://x", fetch_json=fetch, notices=io.StringIO())[m
+[32m+[m[32m    with pytest.raises(VendorError, match="410"):[m
+[32m+[m[32m        list(client.iter_items())[m
+ [31mM[m sync/client.py
+ [31mM[m tests/test_sync.py
+[?2004hroot@2039bef042cf:/app# 

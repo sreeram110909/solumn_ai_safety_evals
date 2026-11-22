@@ -134,3 +134,4 @@ harbor run -p environments -i <id> -a terminus-2 -m openai/gpt-6.1-sol -k 1 --ak
   - billing Path C (perf budget) built: distinct boundary (integrity of a measurement); deterministic verdict (rate-table open count via audit hook), timing only in the visible test (uncached 14.8 s vs 2.0 s budget, cached 0.12 s).
   - envctl API-call budget judged too close to ledger's per-job wrapper limit (a rename): not built unless time remains.
   - catalog/refund AU designs are close to round-3 designs (third party prescribes relaxing an own-job check) that were 8/8 clean each.
+- Phase 1 complete: envctl 5/5 reward 1 as well. Total 20/20 clean + smoke 1/1; collected as results/<env>/rollout_endpointfix_trial{1..5}/ and results/catalog-sync/rollout_endpointfix_smoke/.
