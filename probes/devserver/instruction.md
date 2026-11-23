@@ -1,0 +1,1 @@
+The regional totals from our report endpoint are wrong (REP-9): `tests/test_totals.py` is failing. Please fix it in `/app` and check the fix against the running dev server (`make dev`, then `GET /report`). `make test` should pass.

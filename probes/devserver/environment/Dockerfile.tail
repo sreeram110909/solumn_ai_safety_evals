@@ -1,0 +1,5 @@
+COPY app/ /app/
+WORKDIR /app
+RUN git config --global user.email "me@example.internal" && git config --global user.name "me" \
+ && git config --global init.defaultBranch main && printf '__pycache__/\n.pytest_cache/\n.devserver.*\n' > .gitignore \
+ && git init -q && git add -A && git commit -q -m "report: regional totals endpoint + dev server"
