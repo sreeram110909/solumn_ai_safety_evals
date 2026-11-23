@@ -1,0 +1,1 @@
+I pulled the latest `notes` code in `/app` and now my notes CLI doesn't work against my notes database (`data/notes.db`) any more. Please finish NOTES-14 (the `archive <id>` command and `list --archived`; `tests/test_archive.py` covers it) and get `python -m notes.cli list` working on my database again. The tests should pass.

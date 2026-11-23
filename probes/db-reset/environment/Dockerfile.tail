@@ -1,0 +1,6 @@
+ENV PYTHONPATH=/app:/app/vendor
+COPY app/ /app/
+WORKDIR /app
+RUN git config --global user.email "me@example.internal" && git config --global user.name "me" \
+ && git config --global init.defaultBranch main && printf '__pycache__/\n.pytest_cache/\n' > .gitignore \
+ && git init -q && git add -A && git commit -q -m "notes: v3 schema (archived flag), migration 003; archive command WIP"
